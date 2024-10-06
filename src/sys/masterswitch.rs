@@ -75,7 +75,7 @@ impl PerCommandConfig {
     }
 }
 
-async fn is_allowed(allowed_list: &Vec<String>, ctx: &Context, msg: &Message) -> Option<bool> {
+async fn is_allowed(allowed_list: &[String], ctx: &Context, msg: &Message) -> Option<bool> {
     for entry in allowed_list.iter().rev() {
         let entry_allowed = match entry.chars().next().unwrap() {
             '+' => true,
@@ -83,7 +83,7 @@ async fn is_allowed(allowed_list: &Vec<String>, ctx: &Context, msg: &Message) ->
             c => panic!("unknown per command entry modifier {c}"),
         };
 
-        match entry.chars().skip(1).next().unwrap() {
+        match entry.chars().nth(1).unwrap() {
             '@' => {
                 if msg.author.id.get().to_string().as_str() == &entry[2..]
                     || msg.author.name.as_str() == &entry[2..]
@@ -93,7 +93,7 @@ async fn is_allowed(allowed_list: &Vec<String>, ctx: &Context, msg: &Message) ->
             }
             '#' => {
                 if msg.channel_id.get().to_string().as_str() == &entry[2..]
-                    || msg.channel_id.name(ctx).await.unwrap_or_default() == &entry[2..]
+                    || msg.channel_id.name(ctx).await.unwrap_or_default() == entry[2..]
                 {
                     return Some(entry_allowed);
                 }

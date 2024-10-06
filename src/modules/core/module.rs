@@ -8,6 +8,7 @@ use super::{
     keys::{ShardManagerContainer, StartInstanceContainer},
     ping::CmdPing,
     uptime::CmdUptime,
+    version::CmdVersion,
 };
 
 pub struct ModCore(Arc<HashMap<String, Box<dyn Command>>>);
@@ -29,6 +30,11 @@ impl ModCore {
 
         {
             let cmd: Box<dyn Command> = Box::new(CmdUptime);
+            map.insert(cmd.name().to_string(), cmd);
+        }
+
+        {
+            let cmd: Box<dyn Command> = Box::new(CmdVersion);
             map.insert(cmd.name().to_string(), cmd);
         }
 
@@ -57,6 +63,10 @@ impl Module for ModCore {
     }
 
     fn aliases(&self) -> &[(&str, &str)] {
-        &[("ping", "core ping"), ("uptime", "core uptime")]
+        &[
+            ("ping", "core ping"),
+            ("uptime", "core uptime"),
+            ("version", "core version"),
+        ]
     }
 }

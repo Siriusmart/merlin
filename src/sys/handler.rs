@@ -32,14 +32,14 @@ impl CommandHandler {
     pub async fn run(args: &[&str], ctx: &Context, msg: &Message) {
         if !args.is_empty() {
             if args[0] == "help" {
-                Self::help(&args[1..], &ctx, &msg).await;
+                Self::help(&args[1..], ctx, msg).await;
                 return;
             }
 
             let handler = HANDLER.get().unwrap();
 
             if let Some(module) = handler.modules.get(args[0]) {
-                module.run(&args[1..], &ctx, &msg).await;
+                module.run(&args[1..], ctx, msg).await;
             } else if let Some(alias) = handler.alias.get(args[0]) {
                 CommandHandler::run(
                     [
