@@ -1,4 +1,4 @@
-mod core;
 mod register;
 
-pub use core::ModCore;
+#[cfg(feature = "modcore")]
+mod core;

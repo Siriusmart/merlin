@@ -11,7 +11,7 @@ pub static MASTER: OnceLock<MasterOptions> = OnceLock::new();
 #[serde_inline_default]
 #[derive(Serialize, Deserialize, DefaultFromSerde)]
 pub struct MasterOptions {
-    #[serde_inline_default(">".to_string())]
+    #[serde_inline_default(".".to_string())]
     pub prefix: String,
     #[serde_inline_default("CHANGE ME".to_string())]
     pub token: String,

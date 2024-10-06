@@ -34,7 +34,7 @@ pub trait Config: Serialize + DeserializeOwned + Default {
                         .join("\n")
                 )
             },
-            serde_json::to_string(self).unwrap()
+            serde_json::to_string_pretty(self).unwrap()
         );
 
         let path = Self::path();

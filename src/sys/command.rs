@@ -3,6 +3,8 @@ use serenity::{
     async_trait,
 };
 
+use super::PerCommandConfig;
+
 #[async_trait]
 pub trait Command: Sync + Send {
     fn name(&self) -> &str;
@@ -10,4 +12,8 @@ pub trait Command: Sync + Send {
     fn usage(&self) -> &str;
 
     async fn run(&self, args: &[&str], ctx: &Context, msg: &Message) -> bool;
+
+    fn percmd(&self) -> PerCommandConfig {
+        PerCommandConfig::default()
+    }
 }

@@ -2,6 +2,7 @@ use crate::*;
 
 impl CommandHandler {
     pub fn register(&mut self) {
-        self.add_module(ModCore::new());
+        #[cfg(feature = "modcore")]
+        self.add_module(super::core::ModCore::new());
     }
 }

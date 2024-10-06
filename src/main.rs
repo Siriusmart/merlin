@@ -1,4 +1,4 @@
-use merlin::{CommandHandler, MasterOptions, MASTER};
+use merlin::{CommandHandler, Config, MasterOptions, MasterSwitch, MASTER};
 use serenity::{all::*, async_trait, Client};
 
 struct Handler;
@@ -11,8 +11,8 @@ impl EventHandler for Handler {
             if let Ok(args) = shell_words::split(&msg.content[master.prefix.len()..]) {
                 CommandHandler::run(
                     args.iter().map(String::as_str).collect::<Vec<_>>().as_ref(),
-                    ctx,
-                    msg,
+                    &ctx,
+                    &msg,
                 )
                 .await;
             }
@@ -36,6 +36,7 @@ impl EventHandler for Handler {
 #[tokio::main]
 async fn main() {
     MasterOptions::setup();
+    let mut switch = MasterSwitch::load();
 
     let intents = GatewayIntents::all();
 
@@ -44,7 +45,8 @@ async fn main() {
         .await
         .expect("Err creating client");
 
-    CommandHandler::load(&client).await;
+    CommandHandler::load(&client, &mut switch).await;
+    switch.finalise();
 
     if let Err(e) = client.start().await {
         println!("Client error: {e:?}");

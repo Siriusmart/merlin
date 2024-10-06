@@ -6,7 +6,7 @@ use serenity::{
     Client,
 };
 
-use super::{Module, MASTER};
+use super::{Config, MasterSwitch, Module, MASTER};
 
 static HANDLER: OnceLock<CommandHandler> = OnceLock::new();
 
@@ -29,7 +29,7 @@ impl CommandHandler {
     }
 
     #[async_recursion]
-    pub async fn run(args: &[&str], ctx: Context, msg: Message) {
+    pub async fn run(args: &[&str], ctx: &Context, msg: &Message) {
         if !args.is_empty() {
             if args[0] == "help" {
                 Self::help(&args[1..], &ctx, &msg).await;
@@ -166,16 +166,41 @@ impl CommandHandler {
         }
     }
 
-    pub async fn load(client: &Client) {
+    pub async fn load(client: &Client, switch: &mut MasterSwitch) {
+        let mut switch_modified = false;
+
         let mut handler = Self::new();
         handler.register();
 
         for module in handler.modules.values_mut() {
+            match switch.0.get_mut(module.name()) {
+                Some(permod) => {
+                    for (cmd_label, cmd) in module.commands().iter() {
+                        if !permod.commands.contains_key(cmd_label) {
+                            switch_modified = true;
+                            permod.commands.insert(cmd_label.to_string(), cmd.percmd());
+                        }
+                    }
+
+                    if !permod.enabled {
+                        continue;
+                    }
+                }
+                None => {
+                    switch_modified = true;
+                    switch.0.insert(module.name().to_string(), module.permod());
+                }
+            }
+
             module.setup(client).await;
 
             for (from, to) in module.aliases() {
                 handler.alias.insert(from.to_string(), to.to_string());
             }
+        }
+
+        if switch_modified {
+            switch.save();
         }
 
         let _ = HANDLER.set(handler);

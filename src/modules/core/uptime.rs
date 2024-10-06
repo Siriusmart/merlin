@@ -35,7 +35,7 @@ impl Command for CmdUptime {
         let _ = msg
             .reply(
                 ctx,
-                format!("Bot has been up for {}", duration_string(elapsed)),
+                format!("Bot has been up for {}", duration_string(elapsed, 3)),
             )
             .await;
 
@@ -43,7 +43,7 @@ impl Command for CmdUptime {
     }
 }
 
-fn duration_string(mut sec: u64) -> String {
+fn duration_string(mut sec: u64, precision: usize) -> String {
     if sec == 0 {
         return "less than a second".to_string();
     }
@@ -71,6 +71,10 @@ fn duration_string(mut sec: u64) -> String {
             "{quantity} {unit}{}",
             if quantity == 1 { "" } else { "s" }
         ));
+
+        if out.len() == precision {
+            break;
+        }
     }
 
     if out.len() == 1 {
