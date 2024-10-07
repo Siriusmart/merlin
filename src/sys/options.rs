@@ -6,7 +6,7 @@ use serde_inline_default::serde_inline_default;
 
 use super::Config;
 
-pub static MASTER: OnceLock<MasterOptions> = OnceLock::new();
+pub static mut MASTER: OnceLock<MasterOptions> = OnceLock::new();
 
 #[serde_inline_default]
 #[derive(Serialize, Deserialize, DefaultFromSerde)]
@@ -23,7 +23,12 @@ impl Config for MasterOptions {
 }
 
 impl MasterOptions {
+    pub fn reload() {
+        unsafe { MASTER = OnceLock::new() };
+        Self::setup();
+    }
+
     pub fn setup() {
-        let _ = MASTER.set(MasterOptions::load());
+        let _ = unsafe { MASTER.set(MasterOptions::load()) };
     }
 }

@@ -1,12 +1,13 @@
 use std::{collections::HashMap, sync::Arc};
 
-use serenity::{async_trait, Client};
+use serenity::async_trait;
 
-use crate::{Command, Module};
+use crate::{Command, CommandHandler, Module};
 
 use super::{
     keys::{ShardManagerContainer, StartInstanceContainer},
     ping::CmdPing,
+    reload::CmdReload,
     uptime::CmdUptime,
     version::CmdVersion,
 };
@@ -38,6 +39,11 @@ impl ModCore {
             map.insert(cmd.name().to_string(), cmd);
         }
 
+        {
+            let cmd: Box<dyn Command> = Box::new(CmdReload);
+            map.insert(cmd.name().to_string(), cmd);
+        }
+
         Self(Arc::new(map))
     }
 }
@@ -56,10 +62,13 @@ impl Module for ModCore {
         self.0.clone()
     }
 
-    async fn setup(&mut self, client: &Client) {
+    async fn setup(&mut self) {
+        let client = CommandHandler::client_mut();
         let mut data = client.data.write().await;
-        data.insert::<ShardManagerContainer>(client.shard_manager.clone());
-        data.insert::<StartInstanceContainer>(StartInstanceContainer::new());
+        data.entry::<ShardManagerContainer>()
+            .or_insert(client.shard_manager.clone());
+        data.entry::<StartInstanceContainer>()
+            .or_insert(StartInstanceContainer::new());
     }
 
     fn aliases(&self) -> &[(&str, &str)] {
@@ -67,6 +76,7 @@ impl Module for ModCore {
             ("ping", "core ping"),
             ("uptime", "core uptime"),
             ("version", "core version"),
+            ("reload", "core reload"),
         ]
     }
 }

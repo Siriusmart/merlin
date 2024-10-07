@@ -5,26 +5,31 @@ use serenity::all::{Context, Message, RoleId};
 
 use super::Config;
 
-static SWITCH: OnceLock<MasterSwitch> = OnceLock::new();
+static mut SWITCH: OnceLock<MasterSwitch> = OnceLock::new();
 
 #[derive(Serialize, Deserialize, Default)]
 pub struct MasterSwitch(pub HashMap<String, PerModuleConfig>);
 
 impl MasterSwitch {
     pub fn get(module: &str) -> &PerModuleConfig {
-        SWITCH.get().unwrap().0.get(module).unwrap()
+        unsafe { SWITCH.get() }.unwrap().0.get(module).unwrap()
+    }
+
+    pub fn finalise(self) {
+        let _ = unsafe { SWITCH.set(self) };
+    }
+
+    pub fn reload() -> &'static mut Self {
+        let new = Self::load();
+        unsafe { SWITCH = OnceLock::new() };
+        let _ = unsafe { SWITCH.set(new) };
+        unsafe { SWITCH.get_mut().unwrap() }
     }
 }
 
 impl Config for MasterSwitch {
     const NAME: &'static str = "switch";
     const NOTE: &'static str = "Master switch for each module";
-}
-
-impl MasterSwitch {
-    pub fn finalise(self) {
-        let _ = SWITCH.set(self);
-    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -60,22 +65,24 @@ impl Default for PerCommandConfig {
 }
 
 impl PerModuleConfig {
-    pub async fn is_allowed(&self, ctx: &Context, msg: &Message) -> Option<bool> {
+    pub async fn is_allowed(&self, ctx: &Context, msg: &Message) -> bool {
         is_allowed(&self.allowed, ctx, msg)
             .await
             .map(|b| self.enabled && b)
+            .unwrap_or(self.enabled)
     }
 }
 
 impl PerCommandConfig {
-    pub async fn is_allowed(&self, ctx: &Context, msg: &Message) -> Option<bool> {
+    pub async fn is_allowed(&self, ctx: &Context, msg: &Message) -> bool {
         is_allowed(&self.allowed, ctx, msg)
             .await
             .map(|b| self.enabled && b)
+            .unwrap_or(self.enabled)
     }
 }
 
-async fn is_allowed(allowed_list: &[String], ctx: &Context, msg: &Message) -> Option<bool> {
+pub async fn is_allowed(allowed_list: &[String], ctx: &Context, msg: &Message) -> Option<bool> {
     for entry in allowed_list.iter().rev() {
         let entry_allowed = match entry.chars().next().unwrap() {
             '+' => true,

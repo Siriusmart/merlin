@@ -2,12 +2,10 @@ use std::{collections::HashMap, sync::Arc};
 
 use serenity::{
     all::{Context, Message},
-    async_trait, Client,
+    async_trait,
 };
 
 use super::{Command, CommandHandler, MasterSwitch, PerCommandConfig, PerModuleConfig};
-
-const DEFAULT_PERMISSION: bool = true;
 
 #[async_trait]
 pub trait Module: Sync + Send + 'static {
@@ -24,17 +22,13 @@ pub trait Module: Sync + Send + 'static {
             if let Some(cmd) = self.commands().get(args[0]) {
                 let permod = MasterSwitch::get(self.name());
 
-                if !permod
-                    .is_allowed(ctx, msg)
-                    .await
-                    .unwrap_or(DEFAULT_PERMISSION)
+                if !permod.is_allowed(ctx, msg).await
                     || !permod
                         .commands
                         .get(args[0])
                         .unwrap()
                         .is_allowed(ctx, msg)
                         .await
-                        .unwrap_or(DEFAULT_PERMISSION)
                 {
                     return;
                 }
@@ -65,7 +59,7 @@ pub trait Module: Sync + Send + 'static {
         // TODO show commands list
     }
 
-    async fn setup(&mut self, _client: &Client) {}
+    async fn setup(&mut self) {}
 
     fn aliases(&self) -> &[(&str, &str)] {
         &[]

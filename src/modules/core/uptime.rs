@@ -35,7 +35,7 @@ impl Command for CmdUptime {
         let _ = msg
             .reply(
                 ctx,
-                format!("Bot has been up for {}", duration_string(elapsed, 3)),
+                format!("Merlin as been online for {}", duration_string(elapsed, 3)),
             )
             .await;
 

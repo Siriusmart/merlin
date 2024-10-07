@@ -8,7 +8,8 @@ use serenity::{
 
 use super::{Config, MasterSwitch, Module, MASTER};
 
-static HANDLER: OnceLock<CommandHandler> = OnceLock::new();
+static mut CLIENT: OnceLock<Client> = OnceLock::new();
+static mut HANDLER: OnceLock<CommandHandler> = OnceLock::new();
 
 pub struct CommandHandler {
     pub modules: HashMap<String, Box<dyn Module>>,
@@ -21,6 +22,18 @@ impl CommandHandler {
             modules: Default::default(),
             alias: Default::default(),
         }
+    }
+
+    pub fn client_mut() -> &'static mut Client {
+        unsafe { CLIENT.get_mut() }.unwrap()
+    }
+
+    pub fn client() -> &'static Client {
+        unsafe { CLIENT.get() }.unwrap()
+    }
+
+    pub fn client_set(client: Client) {
+        let _ = unsafe { CLIENT.set(client) };
     }
 
     pub fn add_module<M: Module + 'static>(&mut self, module: M) {
@@ -36,7 +49,7 @@ impl CommandHandler {
                 return;
             }
 
-            let handler = HANDLER.get().unwrap();
+            let handler = unsafe { HANDLER.get() }.unwrap();
 
             if let Some(module) = handler.modules.get(args[0]) {
                 module.run(&args[1..], ctx, msg).await;
@@ -63,7 +76,7 @@ impl CommandHandler {
 
     #[async_recursion]
     async fn help(args: &[&str], ctx: &Context, msg: &Message) {
-        let handler = HANDLER.get().unwrap();
+        let handler = unsafe { HANDLER.get() }.unwrap();
 
         match args {
             [module_str, command_str, ..]
@@ -92,7 +105,7 @@ impl CommandHandler {
                             module.name(),
                             command.name(),
                             command.description(),
-                            MASTER.get().unwrap().prefix,
+                            unsafe { MASTER.get() }.unwrap().prefix,
                             command.name(),
                             command.usage()
                         ),
@@ -166,7 +179,7 @@ impl CommandHandler {
         }
     }
 
-    pub async fn load(client: &Client, switch: &mut MasterSwitch) {
+    pub async fn load(switch: &mut MasterSwitch) {
         let mut switch_modified = false;
 
         let mut handler = Self::new();
@@ -192,7 +205,7 @@ impl CommandHandler {
                 }
             }
 
-            module.setup(client).await;
+            module.setup().await;
 
             for (from, to) in module.aliases() {
                 handler.alias.insert(from.to_string(), to.to_string());
@@ -203,6 +216,11 @@ impl CommandHandler {
             switch.save();
         }
 
-        let _ = HANDLER.set(handler);
+        let _ = unsafe { HANDLER.set(handler) };
+    }
+
+    pub async fn reload(switch: &mut MasterSwitch) {
+        unsafe { HANDLER = OnceLock::new() };
+        Self::load(switch).await;
     }
 }
