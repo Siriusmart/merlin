@@ -221,6 +221,8 @@ impl CommandHandler {
         let mut handler = Self::new();
         handler.register();
 
+        let mut disabled_modules = Vec::new();
+
         for module in handler.modules.values_mut() {
             match switch.0.get_mut(module.name()) {
                 Some(permod) => {
@@ -232,6 +234,7 @@ impl CommandHandler {
                     }
 
                     if !permod.enabled {
+                        disabled_modules.push(module.name().to_string());
                         continue;
                     }
                 }
@@ -250,6 +253,10 @@ impl CommandHandler {
 
         if switch_modified {
             switch.save();
+        }
+
+        for disabled in disabled_modules {
+            handler.modules.remove(&disabled).unwrap();
         }
 
         let _ = unsafe { HANDLER.set(handler) };

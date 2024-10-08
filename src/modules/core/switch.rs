@@ -28,10 +28,10 @@ impl Command for CmdSwitch {
 
     async fn run(&self, args: &[&str], ctx: &Context, msg: &Message) -> bool {
         match args {
-            ["core", "switch", val] if matches!(*val, "enabled" | "disabled") => {
+            ["core.switch", val] if matches!(*val, "enable" | "disable") => {
                 let _ = msg.reply(ctx, "core.switch cannot be disabled.").await;
             }
-            ["core", val] if matches!(*val, "enabled" | "disabled") => {
+            ["core", val] if matches!(*val, "enable" | "disable") => {
                 let _ = msg.reply(ctx, "core cannot be disabled.").await;
             }
             [item, val] => {
@@ -98,7 +98,7 @@ impl Command for CmdSwitch {
                             .fold(String::new(), |mut current, (cmd, options)| {
                                 write!(
                                     current,
-                                    "\n\\ - {}.{} is *{}*",
+                                    "\n\\- {}.{} is *{}*",
                                     item,
                                     cmd,
                                     if options.enabled {
