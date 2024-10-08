@@ -49,7 +49,7 @@ impl Mongo {
 }
 
 #[serde_inline_default]
-#[derive(Serialize, Deserialize, DefaultFromSerde)]
+#[derive(Serialize, Deserialize, DefaultFromSerde, Hash)]
 struct MongoConfig {
     #[serde_inline_default("mongodb://localhost:27017".to_string())]
     pub address: String,

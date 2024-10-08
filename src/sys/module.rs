@@ -20,7 +20,7 @@ pub trait Module: Sync + Send + 'static {
     async fn run(&self, args: &[&str], ctx: &Context, msg: &Message) {
         if !args.is_empty() {
             if let Some(cmd) = self.commands().get(args[0]) {
-                let permod = MasterSwitch::get(self.name());
+                let permod = MasterSwitch::get(self.name()).unwrap();
 
                 if !permod.is_allowed(ctx, msg).await
                     || !permod
@@ -34,7 +34,7 @@ pub trait Module: Sync + Send + 'static {
                 }
 
                 if !cmd.run(&args[1..], ctx, msg).await {
-                    // TODO show correct syntax
+                    CommandHandler::help(&[&[self.name()], args].concat(), ctx, msg).await
                 }
 
                 return;
@@ -56,7 +56,7 @@ pub trait Module: Sync + Send + 'static {
             return;
         }
 
-        // TODO show commands list
+        CommandHandler::help(&[self.name()], ctx, msg).await
     }
 
     async fn setup(&mut self) {}

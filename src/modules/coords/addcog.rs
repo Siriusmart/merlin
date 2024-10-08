@@ -28,7 +28,6 @@ impl Command for CmdAddcog {
 
     async fn run(&self, args: &[&str], ctx: &Context, msg: &Message) -> bool {
         match args {
-            [] => todo!(),
             [name] if !name.contains('/') => addmain(name, "", ctx, msg).await,
             [name, description] if !name.contains('/') => {
                 addmain(name, description, ctx, msg).await

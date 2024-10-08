@@ -8,6 +8,8 @@ use super::{
     keys::{ShardManagerContainer, StartInstanceContainer},
     ping::CmdPing,
     reload::CmdReload,
+    save::CmdSave,
+    switch::CmdSwitch,
     uptime::CmdUptime,
     version::CmdVersion,
 };
@@ -44,6 +46,16 @@ impl ModCore {
             map.insert(cmd.name().to_string(), cmd);
         }
 
+        {
+            let cmd: Box<dyn Command> = Box::new(CmdSwitch);
+            map.insert(cmd.name().to_string(), cmd);
+        }
+
+        {
+            let cmd: Box<dyn Command> = Box::new(CmdSave);
+            map.insert(cmd.name().to_string(), cmd);
+        }
+
         Self(Arc::new(map))
     }
 }
@@ -77,6 +89,8 @@ impl Module for ModCore {
             ("uptime", "core uptime"),
             ("version", "core version"),
             ("reload", "core reload"),
+            ("switch", "core switch"),
+            ("save", "core save"),
         ]
     }
 }

@@ -1,14 +1,19 @@
 use std::{
+    collections::HashMap,
     fs::{self, OpenOptions},
+    hash::{DefaultHasher, Hash, Hasher},
     io::Write,
     path::PathBuf,
+    sync::OnceLock,
     time::UNIX_EPOCH,
 };
 
 use jsonc_to_json::jsonc_to_json;
 use serde::{de::DeserializeOwned, Serialize};
 
-pub trait Config: Serialize + DeserializeOwned + Default {
+static mut CONFIG_HASHES: OnceLock<HashMap<String, u64>> = OnceLock::new();
+
+pub trait Config: Serialize + DeserializeOwned + Default + Hash {
     const NAME: &'static str;
     const NOTE: &'static str = "";
 
@@ -17,6 +22,20 @@ pub trait Config: Serialize + DeserializeOwned + Default {
             .unwrap()
             .join(env!("CARGO_PKG_NAME"))
             .join(format!("{}.jsonc", Self::NAME))
+    }
+
+    fn smart_save(&self) {
+        let mut hasher = DefaultHasher::new();
+        self.hash(&mut hasher);
+
+        let hashes = unsafe { CONFIG_HASHES.get_mut() }.unwrap();
+        let old = hashes.get_mut(Self::NAME).unwrap();
+        let new = hasher.finish();
+
+        if *old != new {
+            self.save();
+            *old = new;
+        }
     }
 
     fn save(&self) {
@@ -58,7 +77,7 @@ pub trait Config: Serialize + DeserializeOwned + Default {
             let content = fs::read_to_string(&path).unwrap();
             let json = jsonc_to_json(&content);
             match serde_json::from_str(&json) {
-                Ok(val) => return val,
+                Ok(val) => return insert_hash(val),
                 Err(_) => {
                     let meta = path
                         .metadata()
@@ -72,13 +91,27 @@ pub trait Config: Serialize + DeserializeOwned + Default {
                         .unwrap();
                     let out = Self::default();
                     out.save();
-                    return out;
+                    return insert_hash(out);
                 }
             }
         }
 
         let out = Self::default();
         out.save();
-        out
+        insert_hash(out)
     }
+}
+
+fn insert_hash<C: Config>(config: C) -> C {
+    if unsafe { CONFIG_HASHES.get() }.is_none() {
+        let _ = unsafe { CONFIG_HASHES.set(HashMap::new()) };
+    }
+
+    let mut hasher = DefaultHasher::new();
+    config.hash(&mut hasher);
+
+    unsafe { CONFIG_HASHES.get_mut() }
+        .unwrap()
+        .insert(C::NAME.to_string(), hasher.finish());
+    config
 }

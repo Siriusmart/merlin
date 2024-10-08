@@ -45,7 +45,17 @@ impl CommandHandler {
     pub async fn run(args: &[&str], ctx: &Context, msg: &Message) {
         if !args.is_empty() {
             if args[0] == "help" {
+                if !args.is_empty()
+                    && MasterSwitch::get(args[0]).is_some_and(|permod| !permod.enabled)
+                {
+                    return;
+                }
+
                 Self::help(&args[1..], ctx, msg).await;
+                return;
+            }
+
+            if MasterSwitch::get(args[0]).is_some_and(|permod| !permod.enabled) {
                 return;
             }
 
@@ -75,10 +85,15 @@ impl CommandHandler {
     }
 
     #[async_recursion]
-    async fn help(args: &[&str], ctx: &Context, msg: &Message) {
+    pub async fn help(args: &[&str], ctx: &Context, msg: &Message) {
         let handler = unsafe { HANDLER.get() }.unwrap();
 
-        match args {
+        let args = args
+            .iter()
+            .flat_map(|arg| arg.split('.'))
+            .collect::<Vec<_>>();
+
+        match args.as_slice() {
             [module_str, command_str, ..]
                 if handler.modules.contains_key(*module_str)
                     && handler
@@ -131,6 +146,8 @@ impl CommandHandler {
             }
             [module, ..] if handler.modules.contains_key(*module) => {
                 let module = handler.modules.get(*module).unwrap();
+                let switch = MasterSwitch::get(module.name()).unwrap();
+
                 let _ = msg
                     .reply(
                         ctx,
@@ -144,6 +161,7 @@ impl CommandHandler {
                                 let mut commands = module
                                     .commands()
                                     .keys()
+                                    .filter(|k| switch.commands.get(k.as_str()).unwrap().enabled)
                                     .map(|label| format!("\\- {}", label))
                                     .collect::<Vec<_>>();
                                 commands.sort();
@@ -185,6 +203,7 @@ impl CommandHandler {
                             let mut modules = handler
                                 .modules
                                 .keys()
+                                .filter(|k| MasterSwitch::get(k).unwrap().enabled)
                                 .map(|label| format!("\\- {}", label))
                                 .collect::<Vec<_>>();
                             modules.sort();

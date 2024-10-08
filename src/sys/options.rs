@@ -9,7 +9,7 @@ use super::Config;
 pub static mut MASTER: OnceLock<MasterOptions> = OnceLock::new();
 
 #[serde_inline_default]
-#[derive(Serialize, Deserialize, DefaultFromSerde)]
+#[derive(Serialize, Deserialize, DefaultFromSerde, Hash)]
 pub struct MasterOptions {
     #[serde_inline_default(".".to_string())]
     pub prefix: String,
@@ -26,6 +26,10 @@ impl MasterOptions {
     pub fn reload() {
         unsafe { MASTER = OnceLock::new() };
         Self::setup();
+    }
+
+    pub fn write_to_config() {
+        unsafe { MASTER.get() }.unwrap().smart_save();
     }
 
     pub fn setup() {
