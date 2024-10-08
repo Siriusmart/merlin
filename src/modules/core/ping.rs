@@ -19,8 +19,8 @@ impl Command for CmdPing {
         "Check shard network latency."
     }
 
-    fn usage(&self) -> &str {
-        ""
+    fn usage(&self) -> &[&str] {
+        &[]
     }
 
     async fn run(&self, _args: &[&str], ctx: &Context, msg: &Message) -> bool {

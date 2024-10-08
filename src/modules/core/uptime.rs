@@ -19,8 +19,8 @@ impl Command for CmdUptime {
         "Check bot uptime."
     }
 
-    fn usage(&self) -> &str {
-        ""
+    fn usage(&self) -> &[&str] {
+        &[]
     }
 
     async fn run(&self, _args: &[&str], ctx: &Context, msg: &Message) -> bool {

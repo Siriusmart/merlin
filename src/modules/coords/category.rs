@@ -1,12 +1,14 @@
+use mongodb::bson::doc;
 use serde::{Deserialize, Serialize};
 
-use crate::CollectionItem;
+use crate::{modules::coords::collection::CATEGORIES, CollectionItem, Counter, Mongo};
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Category {
     #[serde(rename = "_id")]
-    id: String,
+    id: i64,
     name: String,
+    display_name: String,
     description: String,
     allowed: Vec<String>,
     subcategories: Vec<SubCategory>,
@@ -14,27 +16,50 @@ pub struct Category {
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct SubCategory {
+    id: i64,
     name: String,
     description: String,
     allowed: Vec<String>,
 }
 
-impl CollectionItem<String> for Category {
-    fn id(&self) -> String {
-        self.id.clone()
+impl CollectionItem<i64> for Category {
+    fn id(&self) -> i64 {
+        self.id
     }
 }
 
 impl Category {
-    pub fn new(name: String) -> Result<Self, &'static str> {
-        let id = name.replace(' ', "_").to_lowercase();
+    pub async fn new(display_name: String, description: String) -> Result<Self, &'static str> {
+        let name = display_name.replace(' ', "-").to_lowercase();
 
-        if id.chars().any(|c| !c.is_alphanumeric() && c != '_') {
-            return Err("contains non ascii character");
+        if name.chars().any(|c| !c.is_alphanumeric() && c != '-') {
+            return Err("name contains illegal characters");
         }
 
-        // Category::find_by_id(id, )
+        let categories = unsafe { CATEGORIES.get() }.unwrap();
 
-        todo!()
+        if categories
+            .find_one(doc! {"name": &name})
+            .await
+            .unwrap()
+            .is_some()
+        {
+            return Err("a category with that name already exist");
+        }
+
+        let out = Category {
+            id: Counter::bump_get("coords-categories", Mongo::database())
+                .await
+                .unwrap(),
+            name,
+            display_name,
+            description,
+            allowed: Vec::new(),
+            subcategories: Vec::new(),
+        };
+
+        out.save_create(categories).await.unwrap();
+
+        Ok(out)
     }
 }

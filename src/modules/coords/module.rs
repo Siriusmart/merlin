@@ -1,36 +1,54 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{
+    collections::HashMap,
+    sync::{Arc, OnceLock},
+};
 
 use serenity::async_trait;
 
-use crate::{Command, Module};
+use crate::{Command, Module, Mongo};
 
-pub struct ModCore(Arc<HashMap<String, Box<dyn Command>>>);
+use super::{addcog::CmdAddcog, collection::CATEGORIES};
 
-impl Default for ModCore {
+pub struct ModCoords(Arc<HashMap<String, Box<dyn Command>>>);
+
+impl Default for ModCoords {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl ModCore {
+impl ModCoords {
     pub fn new() -> Self {
-        let map = HashMap::new();
+        let mut map = HashMap::new();
+
+        {
+            let cmd: Box<dyn Command> = Box::new(CmdAddcog);
+            map.insert(cmd.name().to_string(), cmd);
+        }
 
         Self(Arc::new(map))
     }
 }
 
 #[async_trait]
-impl Module for ModCore {
+impl Module for ModCoords {
     fn name(&self) -> &str {
-        "core"
+        "coords"
     }
 
     fn description(&self) -> &str {
-        "Core service modules."
+        "Coordinates DB for anarchy servers."
     }
 
     fn commands(&self) -> Arc<HashMap<String, Box<dyn Command>>> {
         self.0.clone()
+    }
+
+    async fn setup(&mut self) {
+        if unsafe { CATEGORIES.get() }.is_some() {
+            unsafe { CATEGORIES = OnceLock::new() };
+        }
+
+        let _ = unsafe { CATEGORIES.set(Mongo::database().collection("coords")) };
     }
 }

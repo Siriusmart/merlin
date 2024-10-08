@@ -17,8 +17,8 @@ impl Command for CmdVersion {
         "Check bot version."
     }
 
-    fn usage(&self) -> &str {
-        ""
+    fn usage(&self) -> &[&str] {
+        &[]
     }
 
     async fn run(&self, _args: &[&str], ctx: &Context, msg: &Message) -> bool {

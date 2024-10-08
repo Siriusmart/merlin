@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::OnceLock};
+use std::{collections::HashMap, fmt::Write, sync::OnceLock};
 
 use async_recursion::async_recursion;
 use serenity::{
@@ -101,13 +101,30 @@ impl CommandHandler {
                     .reply(
                         ctx,
                         format!(
-                            "**[Command] {}.{}**\n{}\n\n**Usage**: {}{} {}",
+                            "**[Command] {}.{}**\n{}\n\n**Usage**:{}",
                             module.name(),
                             command.name(),
                             command.description(),
-                            unsafe { MASTER.get() }.unwrap().prefix,
-                            command.name(),
-                            command.usage()
+                            match command.usage() {
+                                [] => format!(
+                                    "\n{}{} {}",
+                                    unsafe { MASTER.get() }.unwrap().prefix,
+                                    module.name(),
+                                    command.name()
+                                ),
+                                any => any.iter().fold(String::new(), |mut current, usage| {
+                                    write!(
+                                        current,
+                                        "\n{}{} {} {}",
+                                        unsafe { MASTER.get() }.unwrap().prefix,
+                                        module.name(),
+                                        command.name(),
+                                        usage
+                                    )
+                                    .unwrap();
+                                    current
+                                }),
+                            }
                         ),
                     )
                     .await;

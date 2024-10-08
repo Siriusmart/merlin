@@ -18,9 +18,9 @@ impl Counter {
         let update = doc! {"$inc": {"count": 1}};
         let exists = counters.find_one(filter.clone()).await?.is_some();
         Ok(if exists {
-            let options = mongodb::options::FindOneAndUpdateOptions::builder()
-                .upsert(true)
-                .build();
+            // let options = mongodb::options::FindOneAndUpdateOptions::builder()
+            //     .upsert(true)
+            //     .build();
             counters
                 .find_one_and_update(filter, update)
                 .await?

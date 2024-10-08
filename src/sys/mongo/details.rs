@@ -1,6 +1,6 @@
 use std::sync::OnceLock;
 
-use mongodb::{bson::Document, options::ClientOptions, Client, Collection};
+use mongodb::{bson::Document, options::ClientOptions, Client, Collection, Database};
 use serde::{Deserialize, Serialize};
 use serde_default::DefaultFromSerde;
 use serde_inline_default::serde_inline_default;
@@ -41,6 +41,10 @@ impl Mongo {
         unsafe { COUNTERS_SER = OnceLock::new() };
 
         Self::load().await;
+    }
+
+    pub fn database() -> &'static Database {
+        unsafe { DATABASE.get() }.unwrap()
     }
 }
 
