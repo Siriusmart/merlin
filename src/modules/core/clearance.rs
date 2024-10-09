@@ -16,11 +16,11 @@ impl Command for CmdClearance {
     }
 
     fn description(&self) -> &str {
-        "View clearance presets."
+        "Manage clearance presets."
     }
 
     fn usage(&self) -> &[&str] {
-        &["(preset)", "[preset] (rule...)", "[preset] clear"]
+        &["(preset)", "[preset] (rules...)", "[preset] clear"]
     }
 
     async fn run(&self, args: &[&str], ctx: &Context, msg: &Message) -> bool {
@@ -103,18 +103,20 @@ impl Command for CmdClearance {
                 if args
                     .iter()
                     .skip(1)
-                    .any(|line| line.chars().next() == Some('?'))
+                    .any(|line| line.starts_with('?'))
                     || !Clearance::validate(&args[1..])
                 {
                     let _ = msg
                         .reply(
                             ctx,
-                            format!("Failed to update clearance preset because it contains invalid rules.",),
+                            format!("Failed to update clearance preset **{preset}** because it contains invalid rules.",),
                         )
                         .await;
                 } else {
                     Clearance::set(preset.to_string(), &args[1..]);
-                    let _ = msg.reply(ctx, format!("Clearance preset updated.",)).await;
+                    let _ = msg
+                        .reply(ctx, format!("Clearance preset **{preset}** updated.",))
+                        .await;
                 }
             }
         }

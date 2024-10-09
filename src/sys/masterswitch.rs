@@ -23,8 +23,17 @@ impl MasterSwitch {
         unsafe { SWITCH.get() }.unwrap().0.get(module)
     }
 
+    pub fn get_mut(module: &str) -> Option<&mut PerModuleConfig> {
+        unsafe { SWITCH.get_mut() }.unwrap().0.get_mut(module)
+    }
+
     pub fn get_mut_self() -> &'static mut Self {
         unsafe { SWITCH.get_mut() }.unwrap()
+    }
+
+    pub fn has_module(module: &str, command: Option<&str>) -> bool {
+        Self::get(module)
+            .is_some_and(|got| command.is_none() || got.commands.contains_key(command.unwrap()))
     }
 
     pub fn setup() {

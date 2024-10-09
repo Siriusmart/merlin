@@ -60,7 +60,7 @@ impl Clearance {
     }
 
     pub fn set(entry: String, list: &[&str]) -> bool {
-        if list.iter().any(|line| line.chars().next() == Some('?')) {
+        if list.iter().any(|line| line.starts_with('?')) {
             return false;
         }
 
@@ -71,7 +71,7 @@ impl Clearance {
         let clearance = unsafe { CLEARANCES.get_mut() }.unwrap();
         clearance
             .0
-            .insert(entry, list.into_iter().map(|s| s.to_string()).collect());
+            .insert(entry, list.iter().map(|s| s.to_string()).collect());
 
         true
     }
