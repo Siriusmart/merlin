@@ -5,7 +5,7 @@ use serenity::{
     async_trait,
 };
 
-use crate::{sys::Command, Clearance};
+use crate::{sys::Command, Clearance, PerCommandConfig};
 
 pub struct CmdClearance;
 
@@ -99,9 +99,33 @@ impl Command for CmdClearance {
                         .await;
                 }
             }
-            _ => {}
+            [preset, ..] => {
+                if args
+                    .iter()
+                    .skip(1)
+                    .any(|line| line.chars().next() == Some('?'))
+                    || !Clearance::validate(&args[1..])
+                {
+                    let _ = msg
+                        .reply(
+                            ctx,
+                            format!("Failed to update clearance preset because it contains invalid rules.",),
+                        )
+                        .await;
+                } else {
+                    Clearance::set(preset.to_string(), &args[1..]);
+                    let _ = msg.reply(ctx, format!("Clearance preset updated.",)).await;
+                }
+            }
         }
 
         true
+    }
+
+    fn percmd(&self) -> PerCommandConfig {
+        PerCommandConfig {
+            allowed: vec!["?admin".to_string()],
+            ..Default::default()
+        }
     }
 }

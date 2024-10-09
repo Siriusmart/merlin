@@ -134,7 +134,7 @@ impl Command for CmdSwitch {
 
     fn percmd(&self) -> PerCommandConfig {
         PerCommandConfig {
-            allowed: vec!["-everyone".to_string()],
+            allowed: vec!["?admin".to_string()],
             ..Default::default()
         }
     }

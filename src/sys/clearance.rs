@@ -8,7 +8,7 @@ use super::Config;
 
 static mut CLEARANCES: OnceLock<Clearance> = OnceLock::new();
 
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Serialize, Deserialize)]
 pub struct Clearance(pub HashMap<String, Vec<String>>);
 
 impl Hash for Clearance {
@@ -16,6 +16,15 @@ impl Hash for Clearance {
         let mut clearances = self.0.iter().collect::<Vec<_>>();
         clearances.sort_by_key(|entry| entry.0);
         clearances.hash(state);
+    }
+}
+
+impl Default for Clearance {
+    fn default() -> Self {
+        Self(HashMap::from([(
+            "admin".to_string(),
+            vec!["-everyone".to_string()],
+        )]))
     }
 }
 
@@ -50,22 +59,24 @@ impl Clearance {
         let _ = unsafe { CLEARANCES.set(Clearance::load()) };
     }
 
-    pub fn set(entry: String, list: Vec<String>) -> bool {
-        if list.iter().any(|line| line[1..] == entry) {
+    pub fn set(entry: String, list: &[&str]) -> bool {
+        if list.iter().any(|line| line.chars().next() == Some('?')) {
             return false;
         }
 
-        if !Self::validate(list.as_slice()) {
+        if !Self::validate(list) {
             return false;
         }
 
         let clearance = unsafe { CLEARANCES.get_mut() }.unwrap();
-        clearance.0.insert(entry, list);
+        clearance
+            .0
+            .insert(entry, list.into_iter().map(|s| s.to_string()).collect());
 
         true
     }
 
-    pub fn validate(allowed_list: &[String]) -> bool {
+    pub fn validate(allowed_list: &[&str]) -> bool {
         for entry in allowed_list {
             if entry.len() < 2 || !matches!(entry.chars().next().unwrap(), '+' | '-') {
                 return false;
