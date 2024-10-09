@@ -3,7 +3,7 @@ use serenity::{
     async_trait,
 };
 
-use crate::{sys::Command, CommandHandler, MasterSwitch, PerCommandConfig};
+use crate::{sys::Command, Clearance, CommandHandler, MasterSwitch, PerCommandConfig};
 
 pub struct CmdReload;
 
@@ -38,8 +38,9 @@ impl Command for CmdReload {
 }
 
 async fn reload() {
-    let switch = MasterSwitch::reload();
+    MasterSwitch::reload();
+    Clearance::reload();
     #[cfg(feature = "mongo")]
     crate::Mongo::reload().await;
-    CommandHandler::reload(switch).await;
+    CommandHandler::reload().await;
 }

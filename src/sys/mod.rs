@@ -1,3 +1,4 @@
+mod clearance;
 mod command;
 mod config;
 mod handler;
@@ -15,5 +16,6 @@ pub use config::Config;
 pub use handler::CommandHandler;
 pub use module::Module;
 
+pub use clearance::*;
 pub use masterswitch::*;
 pub use options::*;

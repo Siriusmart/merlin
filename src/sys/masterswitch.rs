@@ -1,9 +1,9 @@
 use std::{collections::HashMap, hash::Hash, sync::OnceLock};
 
 use serde::{Deserialize, Serialize};
-use serenity::all::{Context, Message, RoleId};
+use serenity::all::{Context, Message};
 
-use super::Config;
+use super::{Clearance, Config};
 
 static mut SWITCH: OnceLock<MasterSwitch> = OnceLock::new();
 
@@ -23,8 +23,12 @@ impl MasterSwitch {
         unsafe { SWITCH.get() }.unwrap().0.get(module)
     }
 
-    pub fn finalise(self) {
-        let _ = unsafe { SWITCH.set(self) };
+    pub fn get_mut_self() -> &'static mut Self {
+        unsafe { SWITCH.get_mut() }.unwrap()
+    }
+
+    pub fn setup() {
+        let _ = unsafe { SWITCH.set(Self::load()) };
     }
 
     pub fn write_to_config() {
@@ -113,7 +117,7 @@ impl Default for PerCommandConfig {
 
 impl PerModuleConfig {
     pub async fn is_allowed(&self, ctx: &Context, msg: &Message) -> bool {
-        is_allowed(&self.allowed, ctx, msg)
+        Clearance::is_allowed(&self.allowed, ctx, msg)
             .await
             .map(|b| self.enabled && b)
             .unwrap_or(self.enabled)
@@ -122,81 +126,9 @@ impl PerModuleConfig {
 
 impl PerCommandConfig {
     pub async fn is_allowed(&self, ctx: &Context, msg: &Message) -> bool {
-        is_allowed(&self.allowed, ctx, msg)
+        Clearance::is_allowed(&self.allowed, ctx, msg)
             .await
             .map(|b| self.enabled && b)
             .unwrap_or(self.enabled)
     }
-}
-
-pub async fn is_allowed(allowed_list: &[String], ctx: &Context, msg: &Message) -> Option<bool> {
-    for entry in allowed_list.iter().rev() {
-        let entry_allowed = match entry.chars().next().unwrap() {
-            '+' => true,
-            '-' => false,
-            c => panic!("unknown per command entry modifier {c}"),
-        };
-
-        match entry.chars().nth(1).unwrap() {
-            '@' => {
-                if msg.author.id.get().to_string().as_str() == &entry[2..]
-                    || msg.author.name.as_str() == &entry[2..]
-                {
-                    return Some(entry_allowed);
-                }
-            }
-            '#' => {
-                if msg.channel_id.get().to_string().as_str() == &entry[2..]
-                    || msg.channel_id.name(ctx).await.unwrap_or_default() == entry[2..]
-                {
-                    return Some(entry_allowed);
-                }
-            }
-            '&' => {
-                if msg.guild_id.is_some()
-                    && msg
-                        .author
-                        .has_role(
-                            ctx,
-                            msg.guild_id.unwrap(),
-                            match entry[2..].parse() {
-                                Ok(id) => RoleId::new(id),
-                                Err(_) => msg
-                                    .guild_id
-                                    .unwrap()
-                                    .roles(ctx)
-                                    .await
-                                    .unwrap()
-                                    .values()
-                                    .find(|role| role.name.as_str() == &entry[2..])
-                                    .map(|role| role.id)
-                                    .unwrap_or_else(|| RoleId::new(1)),
-                            },
-                        )
-                        .await
-                        .unwrap()
-                {
-                    return Some(entry_allowed);
-                }
-            }
-            _ => match &entry[1..] {
-                "everyone" | "everywhere" => {
-                    return Some(entry_allowed);
-                }
-                "dm" => {
-                    if msg.guild_id.is_none() {
-                        return Some(entry_allowed);
-                    }
-                }
-                "server" => {
-                    if msg.guild_id.is_some() {
-                        return Some(entry_allowed);
-                    }
-                }
-                s => panic!("unknown per command entry scope {s}"),
-            },
-        }
-    }
-
-    None
 }

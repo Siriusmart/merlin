@@ -20,10 +20,7 @@ impl Command for CmdSwitch {
     }
 
     fn usage(&self) -> &[&str] {
-        &[
-            "[module] (enable|disable)",
-            "[module]/[command] (enable|disable)",
-        ]
+        &["[module] (enable|disable)"]
     }
 
     async fn run(&self, args: &[&str], ctx: &Context, msg: &Message) -> bool {
@@ -47,7 +44,9 @@ impl Command for CmdSwitch {
                 };
 
                 if success {
-                    let _ = msg.reply(ctx, format!("{item} has been {val}d.")).await;
+                    let _ = msg
+                        .reply(ctx, format!("{item} has been {val}d. *(not saved)*"))
+                        .await;
                 } else {
                     let _ = msg.reply(ctx, "No such module.").await;
                 }

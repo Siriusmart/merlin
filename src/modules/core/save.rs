@@ -3,7 +3,7 @@ use serenity::{
     async_trait,
 };
 
-use crate::{sys::Command, MasterOptions, MasterSwitch, PerCommandConfig};
+use crate::{sys::Command, Clearance, MasterOptions, MasterSwitch, PerCommandConfig};
 
 pub struct CmdSave;
 
@@ -40,6 +40,7 @@ impl Command for CmdSave {
 fn save() {
     MasterSwitch::write_to_config();
     MasterOptions::write_to_config();
+    Clearance::write_to_config();
     // #[cfg(feature = "mongo")]
     // crate::Mongo::reload().await;
 }

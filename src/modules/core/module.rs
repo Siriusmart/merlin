@@ -5,6 +5,7 @@ use serenity::async_trait;
 use crate::{Command, CommandHandler, Module};
 
 use super::{
+    clearance::CmdClearance,
     keys::{ShardManagerContainer, StartInstanceContainer},
     ping::CmdPing,
     reload::CmdReload,
@@ -56,6 +57,11 @@ impl ModCore {
             map.insert(cmd.name().to_string(), cmd);
         }
 
+        {
+            let cmd: Box<dyn Command> = Box::new(CmdClearance);
+            map.insert(cmd.name().to_string(), cmd);
+        }
+
         Self(Arc::new(map))
     }
 }
@@ -91,6 +97,8 @@ impl Module for ModCore {
             ("reload", "core reload"),
             ("switch", "core switch"),
             ("save", "core save"),
+            ("clearance", "core clearance"),
+            ("preset", "core clearance"),
         ]
     }
 }

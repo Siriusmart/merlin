@@ -1,4 +1,4 @@
-use merlin::{CommandHandler, Config, MasterOptions, MasterSwitch, MASTER};
+use merlin::{Clearance, CommandHandler, MasterOptions, MasterSwitch, MASTER};
 use serenity::{all::*, async_trait, Client};
 
 struct Handler;
@@ -36,7 +36,8 @@ impl EventHandler for Handler {
 #[tokio::main]
 async fn main() {
     MasterOptions::setup();
-    let mut switch = MasterSwitch::load();
+    MasterSwitch::setup();
+    Clearance::setup();
     let intents = GatewayIntents::all();
 
     #[cfg(feature = "mongo")]
@@ -48,9 +49,7 @@ async fn main() {
         .expect("Err creating client");
 
     CommandHandler::client_set(client);
-
-    CommandHandler::load(&mut switch).await;
-    switch.finalise();
+    CommandHandler::load().await;
 
     if let Err(e) = CommandHandler::client_mut().start().await {
         println!("Client error: {e:?}");

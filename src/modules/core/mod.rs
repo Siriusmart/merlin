@@ -1,6 +1,7 @@
 mod keys;
 mod module;
 
+mod clearance;
 mod ping;
 mod reload;
 mod save;

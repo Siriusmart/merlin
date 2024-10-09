@@ -63,23 +63,35 @@ impl CommandHandler {
 
             if let Some(module) = handler.modules.get(args[0]) {
                 module.run(&args[1..], ctx, msg).await;
-            } else if let Some(alias) = handler.alias.get(args[0]) {
-                CommandHandler::run(
-                    [
-                        shell_words::split(alias)
-                            .unwrap()
+            } else {
+                for i in 0..args.len() {
+                    if let Some(alias) = handler.alias.get(
+                        &args
                             .iter()
-                            .map(String::as_str)
+                            .take(i + 1)
+                            .copied()
                             .collect::<Vec<_>>()
+                            .join(" "),
+                    ) {
+                        CommandHandler::run(
+                            [
+                                shell_words::split(alias)
+                                    .unwrap()
+                                    .iter()
+                                    .map(String::as_str)
+                                    .collect::<Vec<_>>()
+                                    .as_ref(),
+                                &args[i + 1..],
+                            ]
+                            .concat()
                             .as_ref(),
-                        &args[1..],
-                    ]
-                    .concat()
-                    .as_ref(),
-                    ctx,
-                    msg,
-                )
-                .await;
+                            ctx,
+                            msg,
+                        )
+                        .await;
+                        break;
+                    }
+                }
             }
         }
     }
@@ -215,7 +227,8 @@ impl CommandHandler {
         }
     }
 
-    pub async fn load(switch: &mut MasterSwitch) {
+    pub async fn load() {
+        let switch = MasterSwitch::get_mut_self();
         let mut switch_modified = false;
 
         let mut handler = Self::new();
@@ -262,8 +275,8 @@ impl CommandHandler {
         let _ = unsafe { HANDLER.set(handler) };
     }
 
-    pub async fn reload(switch: &mut MasterSwitch) {
+    pub async fn reload() {
         unsafe { HANDLER = OnceLock::new() };
-        Self::load(switch).await;
+        Self::load().await;
     }
 }
