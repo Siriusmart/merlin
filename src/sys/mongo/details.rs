@@ -27,8 +27,8 @@ impl Mongo {
 
         let db = client.database(&config.db);
 
-        let counters_deser: Collection<Counter> = db.collection(&config.counters);
-        let counters_ser: Collection<Document> = db.collection(&config.counters);
+        let counters_deser: Collection<Counter> = db.collection("counters");
+        let counters_ser: Collection<Document> = db.collection("counters");
 
         unsafe { DATABASE.set(db) }.unwrap();
         unsafe { COUNTERS_DESER.set(counters_deser) }.unwrap();
@@ -55,8 +55,6 @@ struct MongoConfig {
     pub address: String,
     #[serde_inline_default("merlin".to_string())]
     pub db: String,
-    #[serde_inline_default("counters".to_string())]
-    pub counters: String,
 }
 
 impl Config for MongoConfig {

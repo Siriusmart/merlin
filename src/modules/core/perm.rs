@@ -25,6 +25,7 @@ impl Command for CmdPerm {
 
     async fn run(&self, args: &[&str], ctx: &Context, msg: &Message) -> bool {
         match args {
+            [] => return false,
             [module] => {
                 let (module, command) = if let Some((module, command)) = module.split_once('.') {
                     (module, Some(command))
@@ -235,7 +236,6 @@ impl Command for CmdPerm {
                     }
                 }
             }
-            _ => {}
         }
 
         true

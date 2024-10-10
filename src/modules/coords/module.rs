@@ -51,4 +51,8 @@ impl Module for ModCoords {
 
         let _ = unsafe { CATEGORIES.set(Mongo::database().collection("coords")) };
     }
+
+    fn aliases(&self) -> &[(&str, &str)] {
+        &[("addcog", "coords addcog")]
+    }
 }

@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use mongodb::bson::doc;
 use serde::{Deserialize, Serialize};
 
@@ -6,20 +8,19 @@ use crate::{modules::coords::collection::CATEGORIES, CollectionItem, Counter, Mo
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Category {
     #[serde(rename = "_id")]
-    id: i64,
-    name: String,
-    display_name: String,
-    description: String,
-    allowed: Vec<String>,
-    subcategories: Vec<SubCategory>,
+    pub id: i64,
+    pub name: String,
+    pub display_name: String,
+    pub description: String,
+    pub allowed: Vec<String>,
+    pub subcategories: HashMap<String, Subcategory>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
-pub struct SubCategory {
-    id: i64,
-    name: String,
-    description: String,
-    allowed: Vec<String>,
+pub struct Subcategory {
+    pub name: String,
+    pub description: String,
+    pub allowed: Vec<String>,
 }
 
 impl CollectionItem<i64> for Category {
@@ -28,7 +29,25 @@ impl CollectionItem<i64> for Category {
     }
 }
 
+impl Subcategory {
+    pub fn new(name: String, description: String) -> Self {
+        Self {
+            name,
+            description,
+            allowed: Default::default(),
+        }
+    }
+}
+
 impl Category {
+    pub async fn get(display_name: &str) -> Option<Self> {
+        let name = display_name.replace(' ', "-").to_lowercase();
+
+        let categories = unsafe { CATEGORIES.get() }.unwrap();
+
+        categories.find_one(doc! {"name": &name}).await.unwrap()
+    }
+
     pub async fn new(display_name: String, description: String) -> Result<Self, &'static str> {
         let name = display_name.replace(' ', "-").to_lowercase();
 
@@ -55,7 +74,7 @@ impl Category {
             display_name,
             description,
             allowed: Vec::new(),
-            subcategories: Vec::new(),
+            subcategories: HashMap::new(),
         };
 
         out.save_create(categories).await.unwrap();
