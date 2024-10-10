@@ -6,8 +6,8 @@
 
 # Module system
 
-- [Modules]()
-    - [Switches]()
+- [Modules](./modules/index.md)
+    - [Switches](./modules/switches.md)
     - [Permissions]()
     - [Clearance levels]()
 
