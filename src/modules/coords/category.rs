@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{modules::coords::collection::CATEGORIES, CollectionItem, Counter, Mongo};
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Category {
     #[serde(rename = "_id")]
     pub id: i64,
@@ -13,12 +13,15 @@ pub struct Category {
     pub display_name: String,
     pub description: String,
     pub allowed: Vec<String>,
+    pub subcogcounter: i64,
     pub subcategories: HashMap<String, Subcategory>,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Subcategory {
+    pub id: i64,
     pub name: String,
+    pub display_name: String,
     pub description: String,
     pub allowed: Vec<String>,
 }
@@ -30,9 +33,11 @@ impl CollectionItem<i64> for Category {
 }
 
 impl Subcategory {
-    pub fn new(name: String, description: String) -> Self {
+    pub fn new(name: String, display_name: String, description: String, id: i64) -> Self {
         Self {
+            id,
             name,
+            display_name,
             description,
             allowed: Default::default(),
         }
@@ -40,6 +45,20 @@ impl Subcategory {
 }
 
 impl Category {
+    pub fn contains(&self, subcog: &str) -> bool {
+        self.subcategories.values().any(|item| item.name == subcog)
+    }
+
+    pub fn get_subcog(&self, subcog: &str) -> Option<&Subcategory> {
+        self.subcategories.values().find(|val| val.name == subcog)
+    }
+
+    pub fn get_subcog_mut(&mut self, subcog: &str) -> Option<&mut Subcategory> {
+        self.subcategories
+            .values_mut()
+            .find(|val| val.name == subcog)
+    }
+
     pub async fn get(display_name: &str) -> Option<Self> {
         let name = display_name.replace(' ', "-").to_lowercase();
 
@@ -63,7 +82,7 @@ impl Category {
             .unwrap()
             .is_some()
         {
-            return Err("a category with that name already exist");
+            return Err("a category with that name already exists");
         }
 
         let out = Category {
@@ -74,6 +93,7 @@ impl Category {
             display_name,
             description,
             allowed: Vec::new(),
+            subcogcounter: 1,
             subcategories: HashMap::new(),
         };
 

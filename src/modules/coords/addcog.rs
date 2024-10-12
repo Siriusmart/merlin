@@ -3,7 +3,7 @@ use serenity::{
     async_trait,
 };
 
-use crate::{sys::Command, CollectionItem};
+use crate::{sys::Command, Clearance, CollectionItem};
 
 use super::{
     category::{Category, Subcategory},
@@ -44,19 +44,37 @@ impl Command for CmdAddcog {
 }
 
 async fn addmain(name: &str, desc: &str, ctx: &Context, msg: &Message) {
+    if name.is_empty() {
+        let _ = msg.reply(ctx, "Category name cannot be empty.").await;
+        return;
+    }
+
+    if Category::get(name).await.is_some() {
+        let _ = msg
+            .reply(
+                ctx,
+                "Category not created because a category with that name already exist.",
+            )
+            .await;
+        return;
+    }
+
     let cog = Category::new(name.to_string(), desc.to_string()).await;
 
     match cog {
-        Ok(cog) if cog.name == name => {
-            let _ = msg
-                .reply(ctx, format!("Category **{}** created!", cog.name))
-                .await;
-        }
         Ok(cog) => {
             let _ = msg
                 .reply(
                     ctx,
-                    format!("Category **{}** ({}) created!", cog.display_name, cog.name),
+                    format!(
+                        "Category **{}**{} created!",
+                        cog.display_name,
+                        if cog.name == cog.display_name {
+                            String::new()
+                        } else {
+                            format!(" ({})", cog.name)
+                        }
+                    ),
                 )
                 .await;
         }
@@ -88,8 +106,24 @@ async fn addsub(name: &str, desc: &str, ctx: &Context, msg: &Message) {
         return;
     };
 
-    if cog.subcategories.contains_key(sub) {
-        let _ = msg.reply(ctx, "Subcategory already exist.").await;
+    if !Clearance::is_allowed(&cog.allowed, ctx, msg)
+        .await
+        .unwrap_or(true)
+    {
+        let _ = msg
+            .reply(
+                ctx,
+                format!(
+                    "You don't have permission to edit **{}**{}.",
+                    cog.display_name,
+                    if cog.name == cog.display_name {
+                        String::new()
+                    } else {
+                        format!(" ({})", cog.name)
+                    }
+                ),
+            )
+            .await;
         return;
     }
 
@@ -105,10 +139,26 @@ async fn addsub(name: &str, desc: &str, ctx: &Context, msg: &Message) {
         return;
     }
 
-    let subcog = Subcategory::new(name.to_string(), desc.to_string());
-    let real_name = subcog.name.clone();
+    if name.is_empty() {
+        let _ = msg.reply(ctx, "Category name cannot be empty.").await;
+        return;
+    }
 
-    cog.subcategories.insert(name.clone(), subcog);
+    if cog.contains(&name) {
+        let _ = msg
+            .reply(
+                ctx,
+                "Category not created because a category with that name already exist.",
+            )
+            .await;
+        return;
+    }
+
+    let subcog = Subcategory::new(name.to_string(), sub.to_string(), desc.to_string(), cog.id);
+
+    cog.subcategories
+        .insert(cog.subcogcounter.to_string(), subcog);
+    cog.subcogcounter += 1;
     cog.save_replace(unsafe { CATEGORIES.get() }.unwrap())
         .await
         .unwrap();
@@ -116,7 +166,16 @@ async fn addsub(name: &str, desc: &str, ctx: &Context, msg: &Message) {
     let _ = msg
         .reply(
             ctx,
-            format!("Subcategory **{}.{}** created!", cog.name, real_name),
+            format!(
+                "Subcategory **{}.{}**{} created!",
+                cog.display_name,
+                sub,
+                if cog.name != cog.display_name || sub != name {
+                    format!(" ({}.{})", cog.name, sub)
+                } else {
+                    String::new()
+                }
+            ),
         )
         .await;
 }
