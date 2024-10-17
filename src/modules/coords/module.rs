@@ -7,7 +7,13 @@ use serenity::async_trait;
 
 use crate::{Command, Module, Mongo};
 
-use super::{addcog::CmdAddcog, cog::CmdCog, collection::CATEGORIES, editcog::CmdEditCog};
+use super::{
+    addcog::CmdAddcog,
+    addcoord::CmdAddCoord,
+    cog::CmdCog,
+    collection::{CATEGORIES, COORDS},
+    editcog::CmdEditCog,
+};
 
 pub struct ModCoords(Arc<HashMap<String, Box<dyn Command>>>);
 
@@ -36,6 +42,11 @@ impl ModCoords {
             map.insert(cmd.name().to_string(), cmd);
         }
 
+        {
+            let cmd: Box<dyn Command> = Box::new(CmdAddCoord);
+            map.insert(cmd.name().to_string(), cmd);
+        }
+
         Self(Arc::new(map))
     }
 }
@@ -59,12 +70,18 @@ impl Module for ModCoords {
             unsafe { CATEGORIES = OnceLock::new() };
         }
 
+        if unsafe { COORDS.get() }.is_some() {
+            unsafe { COORDS = OnceLock::new() };
+        }
+
         let _ = unsafe { CATEGORIES.set(Mongo::database().collection("coords-cogs")) };
+        let _ = unsafe { COORDS.set(Mongo::database().collection("coords-coords")) };
     }
 
     fn aliases(&self) -> &[(&str, &str)] {
         &[
             ("addcog", "coords addcog"),
+            ("addcoord", "coords addcoord"),
             ("cog", "coords cog"),
             ("editcog", "coords editcog"),
         ]

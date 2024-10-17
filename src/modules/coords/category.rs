@@ -5,6 +5,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::{modules::coords::collection::CATEGORIES, CollectionItem, Counter, Mongo};
 
+// special categories
+// X.0 - uncategorised
+// 0.1 - private: author only
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Category {
     #[serde(rename = "_id")]
@@ -45,6 +49,26 @@ impl Subcategory {
 }
 
 impl Category {
+    // category, category id, subcog id
+    pub async fn cogs_from_name(name: &str) -> Option<(Option<Category>, i64, Option<i64>)> {
+        if name == "generic.unspecified" {
+            return Some((None, 0, Some(0)));
+        }
+
+        if let Some((left, right)) = name.split_once('.') {
+            Self::get(left).await.and_then(|cog| {
+                let id = cog.id;
+                let subcog = cog.get_subcog(right)?.id;
+                Some((Some(cog), id, Some(subcog)))
+            })
+        } else {
+            Self::get(name).await.map(|cog| {
+                let id = cog.id;
+                (Some(cog), id, None)
+            })
+        }
+    }
+
     pub fn contains(&self, subcog: &str) -> bool {
         self.subcategories.values().any(|item| item.name == subcog)
     }
