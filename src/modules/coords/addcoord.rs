@@ -5,7 +5,10 @@ use serenity::{
 
 use crate::{sys::Command, Clearance};
 
-use super::{category::Category, coord::Coord};
+use super::{
+    category::Category,
+    coord::{Coord, Dimension},
+};
 
 pub struct CmdAddCoord;
 
@@ -20,15 +23,23 @@ impl Command for CmdAddCoord {
     }
 
     fn usage(&self) -> &[&str] {
-        &["[name] [x] [z] (category) (description)"]
+        &["[name] (ow|nether|end) [x] [z] (category) (description)"]
     }
 
     async fn run(&self, args: &[&str], ctx: &Context, msg: &Message) -> bool {
-        let (name, x, z, cog) = match args {
-            [name, x, z, cog] => (name, *x, *z, *cog),
-            [name, x, z] => (name, *x, *z, "generic.unspecified"),
+        let (name, dim, x, z, cog) = match args {
+            [name, dim, x, z, cog] if matches!(*dim, "ow" | "nether" | "end") => {
+                (name, Some(dim), *x, *z, *cog)
+            }
+            [name, dim, x, z] if matches!(*dim, "ow" | "nether" | "end") => {
+                (name, Some(dim), *x, *z, "generic.unspecified")
+            }
+            [name, x, z, cog] => (name, None, *x, *z, *cog),
+            [name, x, z] => (name, None, *x, *z, "generic.unspecified"),
             _ => return false,
         };
+
+        let dim = dim.map(|dim| Dimension::from_str(dim)).flatten();
 
         let (category, cog_id, subcog_id) =
             if let Some((category, cog, subcog)) = Category::cogs_from_name(cog).await {
@@ -76,6 +87,7 @@ impl Command for CmdAddCoord {
             subcog_id.unwrap(),
             x.unwrap(),
             z.unwrap(),
+            dim,
         )
         .await;
 

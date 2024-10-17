@@ -3,7 +3,28 @@ use serde::{Deserialize, Serialize};
 
 use crate::{modules::coords::collection::COORDS, CollectionItem, Counter, Mongo};
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Copy)]
+pub enum Dimension {
+    #[serde(rename = "ow")]
+    Overworld,
+    #[serde(rename = "nether")]
+    Nether,
+    #[serde(rename = "end")]
+    End,
+}
+
+impl Dimension {
+    pub fn from_str(s: &str) -> Option<Self> {
+        match s {
+            "ow" => Some(Self::Overworld),
+            "nether" => Some(Self::Nether),
+            "end" => Some(Self::End),
+            _ => None,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Coord {
     #[serde(rename = "_id")]
     pub id: i64,
@@ -15,6 +36,8 @@ pub struct Coord {
     pub x: i64,
     pub z: i64,
     pub author_id: u64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub dim: Option<Dimension>,
 }
 
 impl CollectionItem<i64> for Coord {
@@ -32,6 +55,7 @@ impl Coord {
         subcog: i64,
         x: i64,
         z: i64,
+        dim: Option<Dimension>,
     ) -> Result<Self, &'static str> {
         let name = display_name.replace(' ', "-").to_lowercase();
 
@@ -62,6 +86,7 @@ impl Coord {
             description,
             z,
             x,
+            dim,
         };
 
         new.save_create(unsafe { COORDS.get() }.unwrap())

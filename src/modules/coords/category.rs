@@ -9,7 +9,7 @@ use crate::{modules::coords::collection::CATEGORIES, CollectionItem, Counter, Mo
 // X.0 - uncategorised
 // 0.1 - private: author only
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Category {
     #[serde(rename = "_id")]
     pub id: i64,
@@ -21,7 +21,7 @@ pub struct Category {
     pub subcategories: HashMap<String, Subcategory>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Subcategory {
     pub id: i64,
     pub name: String,
