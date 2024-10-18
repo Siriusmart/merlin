@@ -10,6 +10,8 @@ use super::{
     coord::{Coord, Dimension},
 };
 
+const PREVENT_RADIUS: u64 = 100;
+
 pub struct CmdAddCoord;
 
 #[async_trait]
@@ -82,14 +84,37 @@ impl Command for CmdAddCoord {
             return true;
         }
 
+        let x = x.unwrap();
+        let z = z.unwrap();
+
+        if let Some(entry) =
+            Coord::find_near(x, z, PREVENT_RADIUS, dim.unwrap_or_default(), ctx, msg).await
+        {
+            let _ = msg
+                .reply(
+                    ctx,
+                    format!(
+                        "There is another entry nearby, consider updating **{}**{} instead.",
+                        entry.display_name,
+                        if entry.display_name == entry.name {
+                            String::new()
+                        } else {
+                            format!(" ({})", entry.name)
+                        }
+                    ),
+                )
+                .await;
+            return true;
+        }
+
         let entry = Coord::new(
             name.to_string(),
             desc.to_string(),
             msg.author.id.get(),
             cog_id,
             subcog_id.unwrap_or(0),
-            x.unwrap(),
-            z.unwrap(),
+            x,
+            z,
             dim,
         )
         .await;

@@ -1,8 +1,11 @@
 use std::{collections::HashMap, fmt::Display};
 
-use mongodb::bson::doc;
+use mongodb::bson::{doc, Document};
 use serde::{Deserialize, Serialize};
-use serenity::all::{Context, Message};
+use serenity::{
+    all::{Context, Message},
+    futures::StreamExt,
+};
 
 use crate::{
     modules::coords::{
@@ -12,7 +15,7 @@ use crate::{
     Clearance, CollectionItem, Counter, Mongo,
 };
 
-#[derive(Serialize, Deserialize, Clone, Copy)]
+#[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
 pub enum Dimension {
     #[serde(rename = "ow")]
     Overworld,
@@ -198,5 +201,41 @@ impl Coord {
         let (allowed, display, name) = is_allowed_core(self, ctx, msg).await;
         lookup.insert((self.cog, self.subcog), (allowed, display, name));
         allowed
+    }
+
+    pub async fn find_near(
+        x: i64,
+        z: i64,
+        r: u64,
+        dim: Dimension,
+        ctx: &Context,
+        msg: &Message,
+    ) -> Option<Coord> {
+        let r2 = r.pow(2) as i64;
+
+        let mut cursor = unsafe { COORDS.get() }
+            .unwrap()
+            .find(Document::new())
+            .await
+            .unwrap();
+
+        // allowed, display_name, name
+        let mut clearance_lookup: HashMap<(i64, i64), (bool, String, String)> = HashMap::new();
+
+        while let Some(coord) = cursor.next().await {
+            let coord = coord.unwrap();
+
+            if !coord.is_allowed(ctx, msg, &mut clearance_lookup).await {
+                continue;
+            }
+
+            if (x - coord.x).pow(2) + (z - coord.z).pow(2) <= r2
+                && coord.dim.unwrap_or_default() == dim
+            {
+                return Some(coord);
+            }
+        }
+
+        None
     }
 }
