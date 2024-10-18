@@ -8,13 +8,9 @@ use serenity::{
     futures::StreamExt,
 };
 
-use crate::{sys::Command, Clearance, CollectionItem};
+use crate::sys::Command;
 
-use super::{
-    category::Category,
-    collection::{CATEGORIES, COORDS},
-    coord::Coord,
-};
+use super::{category::Category, collection::COORDS};
 
 const PAGE_SIZE: usize = 5;
 
@@ -31,7 +27,7 @@ impl Command for CmdFind {
     }
 
     fn usage(&self) -> &[&str] {
-        &["(name) (cog=value|page=value)", "*"]
+        &["(name) (cog=value|page=value|near=x,z,radius)", "*"]
     }
 
     async fn run(&self, mut args: &[&str], ctx: &Context, msg: &Message) -> bool {
@@ -51,6 +47,7 @@ impl Command for CmdFind {
         }
 
         let mut page: Option<u32> = None;
+        let mut near: Option<(i64, i64, i64)> = None;
 
         for arg in args.iter() {
             if let Some((left, right)) = arg.split_once('=') {
@@ -77,6 +74,24 @@ impl Command for CmdFind {
                             return true;
                         }
                     }
+                    "near" => {
+                        let args = right.splitn(3, ',').collect::<Vec<_>>();
+
+                        if args.len() != 3 {
+                            return false;
+                        }
+
+                        let x = args[0].parse::<i64>();
+                        let z = args[1].parse::<i64>();
+                        let r = args[2].parse::<u64>();
+
+                        if x.is_err() || z.is_err() || r.is_err() {
+                            let _ = msg.reply(ctx, "Could not parse nearbly arguments.").await;
+                            return true;
+                        }
+
+                        near = Some((x.unwrap(), z.unwrap(), r.unwrap().pow(2) as i64))
+                    }
                     _ => return false,
                 }
             } else {
@@ -92,91 +107,19 @@ impl Command for CmdFind {
         // allowed, display_name, name
         let mut clearance_lookup: HashMap<(i64, i64), (bool, String, String)> = HashMap::new();
 
-        async fn is_allowed(
-            entry: &Coord,
-            ctx: &Context,
-            msg: &Message,
-            lookup: &mut HashMap<(i64, i64), (bool, String, String)>,
-        ) -> bool {
-            if let Some((b, ..)) = lookup.get(&(entry.cog, entry.subcog)) {
-                return *b;
-            }
-
-            async fn is_allowed_core(
-                entry: &Coord,
-                ctx: &Context,
-                msg: &Message,
-            ) -> (bool, String, String) {
-                match (entry.cog, entry.subcog) {
-                    (0, 0) => (
-                        true,
-                        "generic.unspecified".to_string(),
-                        "generic.unspecified".to_string(),
-                    ),
-                    (0, 1) => (
-                        entry.author_id == msg.author.id.get(),
-                        "generic.private".to_string(),
-                        "generic.private".to_string(),
-                    ),
-                    (cog, subcog) => {
-                        let cog = if let Some(cog) =
-                            Category::find_by_id(cog, unsafe { CATEGORIES.get() }.unwrap())
-                                .await
-                                .unwrap()
-                        {
-                            cog
-                        } else {
-                            return (false, String::new(), String::new());
-                        };
-
-                        let mut allowed = Clearance::is_allowed(&cog.allowed, ctx, msg)
-                            .await
-                            .unwrap_or(true);
-
-                        let mut subcog_display = None;
-                        let mut subcog_name = None;
-
-                        if let Some(subcog) = cog.subcategories.get(&subcog.to_string()) {
-                            allowed &= Clearance::is_allowed(&subcog.allowed, ctx, msg)
-                                .await
-                                .unwrap_or(true);
-                            subcog_display = Some(subcog.display_name.as_str());
-                            subcog_name = Some(subcog.name.as_str());
-                        }
-
-                        (
-                            allowed,
-                            if allowed {
-                                format!(
-                                    "{}.{}",
-                                    cog.display_name,
-                                    subcog_display.unwrap_or("unspecified")
-                                )
-                            } else {
-                                String::new()
-                            },
-                            if allowed {
-                                format!("{}.{}", cog.name, subcog_name.unwrap_or("unspecified"))
-                            } else {
-                                String::new()
-                            },
-                        )
-                    }
-                }
-            }
-
-            let (allowed, display, name) = is_allowed_core(entry, ctx, msg).await;
-            lookup.insert((entry.cog, entry.subcog), (allowed, display, name));
-            allowed
-        }
-
         let mut entries = Vec::with_capacity(PAGE_SIZE);
 
         while let Some(entry) = cursor.next().await {
             let entry = entry.unwrap();
 
-            if !is_allowed(&entry, ctx, msg, &mut clearance_lookup).await {
+            if !entry.is_allowed(ctx, msg, &mut clearance_lookup).await {
                 continue;
+            }
+
+            if let Some((x, z, r2)) = near {
+                if (x - entry.x).pow(2) + z.pow(2) > r2 {
+                    continue;
+                }
             }
 
             if skipped < to_skip {

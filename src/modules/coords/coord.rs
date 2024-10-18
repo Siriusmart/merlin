@@ -1,9 +1,16 @@
-use std::fmt::Display;
+use std::{collections::HashMap, fmt::Display};
 
 use mongodb::bson::doc;
 use serde::{Deserialize, Serialize};
+use serenity::all::{Context, Message};
 
-use crate::{modules::coords::collection::COORDS, CollectionItem, Counter, Mongo};
+use crate::{
+    modules::coords::{
+        category::Category,
+        collection::{CATEGORIES, COORDS},
+    },
+    Clearance, CollectionItem, Counter, Mongo,
+};
 
 #[derive(Serialize, Deserialize, Clone, Copy)]
 pub enum Dimension {
@@ -113,5 +120,83 @@ impl Coord {
             .unwrap();
 
         Ok(new)
+    }
+
+    pub async fn is_allowed(
+        &self,
+        ctx: &Context,
+        msg: &Message,
+        lookup: &mut HashMap<(i64, i64), (bool, String, String)>,
+    ) -> bool {
+        if let Some((b, ..)) = lookup.get(&(self.cog, self.subcog)) {
+            return *b;
+        }
+
+        async fn is_allowed_core(
+            entry: &Coord,
+            ctx: &Context,
+            msg: &Message,
+        ) -> (bool, String, String) {
+            match (entry.cog, entry.subcog) {
+                (0, 0) => (
+                    true,
+                    "generic.unspecified".to_string(),
+                    "generic.unspecified".to_string(),
+                ),
+                (0, 1) => (
+                    entry.author_id == msg.author.id.get(),
+                    "generic.private".to_string(),
+                    "generic.private".to_string(),
+                ),
+                (cog, subcog) => {
+                    let cog = if let Some(cog) =
+                        Category::find_by_id(cog, unsafe { CATEGORIES.get() }.unwrap())
+                            .await
+                            .unwrap()
+                    {
+                        cog
+                    } else {
+                        return (false, String::new(), String::new());
+                    };
+
+                    let mut allowed = Clearance::is_allowed(&cog.allowed, ctx, msg)
+                        .await
+                        .unwrap_or(true);
+
+                    let mut subcog_display = None;
+                    let mut subcog_name = None;
+
+                    if let Some(subcog) = cog.subcategories.get(&subcog.to_string()) {
+                        allowed &= Clearance::is_allowed(&subcog.allowed, ctx, msg)
+                            .await
+                            .unwrap_or(true);
+                        subcog_display = Some(subcog.display_name.as_str());
+                        subcog_name = Some(subcog.name.as_str());
+                    }
+
+                    (
+                        allowed,
+                        if allowed {
+                            format!(
+                                "{}.{}",
+                                cog.display_name,
+                                subcog_display.unwrap_or("unspecified")
+                            )
+                        } else {
+                            String::new()
+                        },
+                        if allowed {
+                            format!("{}.{}", cog.name, subcog_name.unwrap_or("unspecified"))
+                        } else {
+                            String::new()
+                        },
+                    )
+                }
+            }
+        }
+
+        let (allowed, display, name) = is_allowed_core(self, ctx, msg).await;
+        lookup.insert((self.cog, self.subcog), (allowed, display, name));
+        allowed
     }
 }
