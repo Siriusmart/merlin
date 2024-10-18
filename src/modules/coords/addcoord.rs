@@ -27,19 +27,22 @@ impl Command for CmdAddCoord {
     }
 
     async fn run(&self, args: &[&str], ctx: &Context, msg: &Message) -> bool {
-        let (name, dim, x, z, cog) = match args {
+        let (name, dim, x, z, cog, desc) = match args {
+            [name, dim, x, z, cog, desc] if matches!(*dim, "ow" | "nether" | "end") => {
+                (name, Some(dim), *x, *z, *cog, *desc)
+            }
             [name, dim, x, z, cog] if matches!(*dim, "ow" | "nether" | "end") => {
-                (name, Some(dim), *x, *z, *cog)
+                (name, Some(dim), *x, *z, *cog, "")
             }
             [name, dim, x, z] if matches!(*dim, "ow" | "nether" | "end") => {
-                (name, Some(dim), *x, *z, "generic.unspecified")
+                (name, Some(dim), *x, *z, "generic.unspecified", "")
             }
-            [name, x, z, cog] => (name, None, *x, *z, *cog),
-            [name, x, z] => (name, None, *x, *z, "generic.unspecified"),
+            [name, x, z, cog] => (name, None, *x, *z, *cog, ""),
+            [name, x, z] => (name, None, *x, *z, "generic.unspecified", ""),
             _ => return false,
         };
 
-        let dim = dim.map(|dim| Dimension::from_str(dim)).flatten();
+        let dim = dim.and_then(|dim| Dimension::from_str(dim));
 
         let (category, cog_id, subcog_id) =
             if let Some((category, cog, subcog)) = Category::cogs_from_name(cog).await {
@@ -52,11 +55,11 @@ impl Command for CmdAddCoord {
             };
 
         if let Some(cog) = category {
-            let subcog = cog.subcategories.get(&subcog_id.unwrap().to_string());
+            let subcog = cog.subcategories.get(&subcog_id.unwrap_or(0).to_string());
             if !Clearance::is_allowed(&cog.allowed, ctx, msg)
                 .await
                 .unwrap_or(true)
-                || !(subcog.is_some()
+                || !(subcog.is_none()
                     || Clearance::is_allowed(&subcog.unwrap().allowed, ctx, msg)
                         .await
                         .unwrap_or(true))
@@ -81,10 +84,10 @@ impl Command for CmdAddCoord {
 
         let entry = Coord::new(
             name.to_string(),
-            args.get(5).map(|s| s.to_string()).unwrap_or_default(),
+            desc.to_string(),
             msg.author.id.get(),
             cog_id,
-            subcog_id.unwrap(),
+            subcog_id.unwrap_or(0),
             x.unwrap(),
             z.unwrap(),
             dim,

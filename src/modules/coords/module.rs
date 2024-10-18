@@ -13,6 +13,7 @@ use super::{
     cog::CmdCog,
     collection::{CATEGORIES, COORDS},
     editcog::CmdEditCog,
+    find::CmdFind,
 };
 
 pub struct ModCoords(Arc<HashMap<String, Box<dyn Command>>>);
@@ -44,6 +45,11 @@ impl ModCoords {
 
         {
             let cmd: Box<dyn Command> = Box::new(CmdAddCoord);
+            map.insert(cmd.name().to_string(), cmd);
+        }
+
+        {
+            let cmd: Box<dyn Command> = Box::new(CmdFind);
             map.insert(cmd.name().to_string(), cmd);
         }
 
@@ -84,6 +90,7 @@ impl Module for ModCoords {
             ("addcoord", "coords addcoord"),
             ("cog", "coords cog"),
             ("editcog", "coords editcog"),
+            ("find", "coords find"),
         ]
     }
 }

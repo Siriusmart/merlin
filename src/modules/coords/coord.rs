@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use mongodb::bson::doc;
 use serde::{Deserialize, Serialize};
 
@@ -24,6 +26,22 @@ impl Dimension {
     }
 }
 
+impl Display for Dimension {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Overworld => f.write_str("overworld"),
+            Self::Nether => f.write_str("nether"),
+            Self::End => f.write_str("end"),
+        }
+    }
+}
+
+impl Default for Dimension {
+    fn default() -> Self {
+        Self::Overworld
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Coord {
     #[serde(rename = "_id")]
@@ -47,6 +65,7 @@ impl CollectionItem<i64> for Coord {
 }
 
 impl Coord {
+    #[allow(clippy::too_many_arguments)]
     pub async fn new(
         display_name: String,
         description: String,

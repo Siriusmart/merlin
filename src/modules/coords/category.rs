@@ -51,14 +51,21 @@ impl Subcategory {
 impl Category {
     // category, category id, subcog id
     pub async fn cogs_from_name(name: &str) -> Option<(Option<Category>, i64, Option<i64>)> {
-        if name == "generic.unspecified" {
-            return Some((None, 0, Some(0)));
+        match name {
+            "generic.unspecified" => return Some((None, 0, Some(0))),
+            "generic.private" => return Some((None, 0, Some(1))),
+            "generic" => return Some((None, 0, None)),
+            _ => {}
         }
 
         if let Some((left, right)) = name.split_once('.') {
             Self::get(left).await.and_then(|cog| {
                 let id = cog.id;
-                let subcog = cog.get_subcog(right)?.id;
+                let subcog = if right == "unspecified" {
+                    0
+                } else {
+                    cog.get_subcog(right)?.id
+                };
                 Some((Some(cog), id, Some(subcog)))
             })
         } else {
@@ -116,7 +123,7 @@ impl Category {
             name,
             display_name,
             description,
-            allowed: Vec::new(),
+            allowed: vec!["?coordmod".to_string()],
             subcogcounter: 1,
             subcategories: HashMap::new(),
         };
