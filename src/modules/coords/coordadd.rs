@@ -3,7 +3,7 @@ use serenity::{
     async_trait,
 };
 
-use crate::{sys::Command, Clearance};
+use crate::{sys::Command, Clearance, PerCommandConfig};
 
 use super::{
     category::Category,
@@ -139,5 +139,12 @@ impl Command for CmdCoordAdd {
         }
 
         true
+    }
+
+    fn percmd(&self) -> PerCommandConfig {
+        PerCommandConfig {
+            allowed: vec!["-everyone".to_string(), "?coorduser".to_string()],
+            ..Default::default()
+        }
     }
 }

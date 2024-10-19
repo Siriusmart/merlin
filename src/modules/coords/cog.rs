@@ -7,7 +7,7 @@ use serenity::{
     futures::StreamExt,
 };
 
-use crate::{sys::Command, Clearance};
+use crate::{sys::Command, Clearance, PerCommandConfig};
 
 use super::{category::Category, collection::CATEGORIES};
 
@@ -205,5 +205,12 @@ impl Command for CmdCog {
             .await;
 
         true
+    }
+
+    fn percmd(&self) -> PerCommandConfig {
+        PerCommandConfig {
+            allowed: vec!["-everyone".to_string(), "?coorduser".to_string()],
+            ..Default::default()
+        }
     }
 }

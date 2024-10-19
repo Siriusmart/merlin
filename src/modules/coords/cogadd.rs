@@ -3,7 +3,7 @@ use serenity::{
     async_trait,
 };
 
-use crate::{sys::Command, Clearance, CollectionItem};
+use crate::{sys::Command, Clearance, CollectionItem, PerCommandConfig};
 
 use super::{
     category::{Category, Subcategory},
@@ -40,6 +40,13 @@ impl Command for CmdCogAdd {
             _ => return false,
         }
         true
+    }
+
+    fn percmd(&self) -> PerCommandConfig {
+        PerCommandConfig {
+            allowed: vec!["-everyone".to_string(), "?coorduser".to_string()],
+            ..Default::default()
+        }
     }
 }
 

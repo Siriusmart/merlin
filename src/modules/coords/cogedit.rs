@@ -3,7 +3,7 @@ use serenity::{
     async_trait,
 };
 
-use crate::{sys::Command, Clearance, CollectionItem};
+use crate::{sys::Command, Clearance, CollectionItem, PerCommandConfig};
 
 use super::{category::Category, collection::CATEGORIES};
 
@@ -195,5 +195,12 @@ impl Command for CmdCogEdit {
         let _ = msg.reply(ctx, "Category details updated.").await;
 
         true
+    }
+
+    fn percmd(&self) -> PerCommandConfig {
+        PerCommandConfig {
+            allowed: vec!["-everyone".to_string(), "?coorduser".to_string()],
+            ..Default::default()
+        }
     }
 }

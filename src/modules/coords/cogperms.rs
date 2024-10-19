@@ -5,7 +5,7 @@ use serenity::{
     async_trait,
 };
 
-use crate::{sys::Command, Clearance, CollectionItem};
+use crate::{sys::Command, Clearance, CollectionItem, PerCommandConfig};
 
 use super::{category::Category, collection::CATEGORIES};
 
@@ -178,6 +178,13 @@ impl Command for CmdCogPerms {
         }
 
         true
+    }
+
+    fn percmd(&self) -> PerCommandConfig {
+        PerCommandConfig {
+            allowed: vec!["-everyone".to_string(), "?coordmod".to_string()],
+            ..Default::default()
+        }
     }
 }
 

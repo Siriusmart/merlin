@@ -7,7 +7,7 @@ use serenity::{
     futures::StreamExt,
 };
 
-use crate::{sys::Command, Clearance, CollectionItem};
+use crate::{sys::Command, Clearance, CollectionItem, PerCommandConfig};
 
 use super::{
     category::Category,
@@ -287,5 +287,12 @@ impl Command for CmdCoordEdit {
             .await;
 
         true
+    }
+
+    fn percmd(&self) -> PerCommandConfig {
+        PerCommandConfig {
+            allowed: vec!["-everyone".to_string(), "?coorduser".to_string()],
+            ..Default::default()
+        }
     }
 }
