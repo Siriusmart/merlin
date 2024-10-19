@@ -21,12 +21,21 @@
 
 # Modules
 
-- [Features]()
+- [Features](./features/index.md)
     - [core]()
-    - [coords]()
+    - [coords](./features/coords/index.md)
+        - [cogadd]()
+        - [cogedit]()
+        - [cogrm]()
+        - [cogperms]()
+        - [coordadd]()
+        - [coordedit]()
+        - [coordrm]()
+        - [find]()
 
 # Development
 
 - [Framework]()
 - [Module]()
     - [Module lifecycle]()
+- [Known issues](./issues.md)

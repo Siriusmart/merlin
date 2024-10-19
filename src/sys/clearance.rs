@@ -78,6 +78,10 @@ impl Clearance {
 
     pub fn validate(allowed_list: &[&str]) -> bool {
         for entry in allowed_list {
+            if entry.chars().next() == Some('?') {
+                continue;
+            }
+
             if entry.len() < 2 || !matches!(entry.chars().next().unwrap(), '+' | '-') {
                 return false;
             }
