@@ -38,8 +38,8 @@ impl Command for CmdCog {
                 let _ = msg
                     .reply(
                         ctx,
-                        format!("**Coords categories**{}", {
-                            let s = unsafe { CATEGORIES.get() }
+                        format!("**Coords categories**\n\\- generic{}", {
+                            unsafe { CATEGORIES.get() }
                                 .unwrap()
                                 .find(doc! {})
                                 .await
@@ -57,19 +57,25 @@ impl Command for CmdCog {
                                     )
                                 })
                                 .collect::<String>()
-                                .await;
-
-                            if s.is_empty() {
-                                "There are no categories at the moment.".to_string()
-                            } else {
-                                s
-                            }
+                                .await
                         }),
                     )
                     .await;
                 return true;
             }
         };
+
+        if main.to_lowercase() == "generic"
+            || sub.is_some_and(|sub| sub.to_lowercase() == "unspecified")
+        {
+            let _ = msg
+                .reply(
+                    ctx,
+                    "This category is made of magic, try using it as a filter instead.",
+                )
+                .await;
+            return true;
+        }
 
         let cog = if let Some(cog) = Category::get(main).await {
             cog
@@ -158,7 +164,7 @@ impl Command for CmdCog {
             .reply(
                 ctx,
                 format!(
-                    "**[Coords category] {}**{}\n{}\n\n**Subcategories**:{}",
+                    "**[Coords category] {}**{}\n{}\n\n**Subcategories**:\n\\- unspecified{}",
                     cog.display_name,
                     if cog.name == cog.display_name {
                         String::new()
@@ -170,13 +176,21 @@ impl Command for CmdCog {
                     } else {
                         cog.description.as_str()
                     },
-                    if cog.subcategories.is_empty() {
-                        "This category has no subcategories.".to_string()
-                    } else {
+                    {
                         let mut subcogs = cog.subcategories.values().collect::<Vec<_>>();
                         subcogs.sort_by_key(|val| &val.name);
                         subcogs.iter().fold(String::new(), |mut current, subcog| {
-                            write!(current, "\n{} ({})", subcog.display_name, subcog.name).unwrap();
+                            write!(
+                                current,
+                                "\n\\- {}{}",
+                                subcog.display_name,
+                                if subcog.name == subcog.display_name {
+                                    String::new()
+                                } else {
+                                    format!(" ({})", subcog.name)
+                                }
+                            )
+                            .unwrap();
                             current
                         })
                     }

@@ -7,12 +7,12 @@ use crate::{sys::Command, Clearance, CollectionItem};
 
 use super::{category::Category, collection::CATEGORIES};
 
-pub struct CmdEditCog;
+pub struct CmdCogEdit;
 
 #[async_trait]
-impl Command for CmdEditCog {
+impl Command for CmdCogEdit {
     fn name(&self) -> &str {
-        "editcog"
+        "cogedit"
     }
 
     fn description(&self) -> &str {

@@ -3,12 +3,13 @@ mod collection;
 mod entry;
 mod module;
 
-mod addcog;
-mod addcoord;
 mod cog;
+mod cogadd;
+mod cogedit;
+mod cogperms;
 mod config;
 mod coord;
-mod editcog;
+mod coordadd;
 mod find;
 
 pub use module::ModCoords;

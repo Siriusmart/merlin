@@ -10,12 +10,12 @@ use super::{
     collection::CATEGORIES,
 };
 
-pub struct CmdAddcog;
+pub struct CmdCogAdd;
 
 #[async_trait]
-impl Command for CmdAddcog {
+impl Command for CmdCogAdd {
     fn name(&self) -> &str {
-        "addcog"
+        "cogadd"
     }
 
     fn description(&self) -> &str {
@@ -49,7 +49,7 @@ async fn addmain(name: &str, desc: &str, ctx: &Context, msg: &Message) {
         return;
     }
 
-    if Category::get(name).await.is_some() {
+    if name == "generic" || Category::get(name).await.is_some() {
         let _ = msg
             .reply(
                 ctx,
@@ -144,7 +144,7 @@ async fn addsub(name: &str, desc: &str, ctx: &Context, msg: &Message) {
         return;
     }
 
-    if cog.contains(&name) {
+    if name == "unspecified" || cog.contains(&name) {
         let _ = msg
             .reply(
                 ctx,

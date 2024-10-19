@@ -8,12 +8,13 @@ use serenity::async_trait;
 use crate::{Command, Module, Mongo};
 
 use super::{
-    addcog::CmdAddcog,
-    addcoord::CmdAddCoord,
     cog::CmdCog,
+    cogadd::CmdCogAdd,
+    cogedit::CmdCogEdit,
+    cogperms::CmdCogPerms,
     collection::{CATEGORIES, COORDS},
     config::CoordsConfig,
-    editcog::CmdEditCog,
+    coordadd::CmdCoordAdd,
     find::CmdFind,
 };
 
@@ -30,7 +31,7 @@ impl ModCoords {
         let mut map = HashMap::new();
 
         {
-            let cmd: Box<dyn Command> = Box::new(CmdAddcog);
+            let cmd: Box<dyn Command> = Box::new(CmdCogAdd);
             map.insert(cmd.name().to_string(), cmd);
         }
 
@@ -40,17 +41,22 @@ impl ModCoords {
         }
 
         {
-            let cmd: Box<dyn Command> = Box::new(CmdEditCog);
+            let cmd: Box<dyn Command> = Box::new(CmdCogEdit);
             map.insert(cmd.name().to_string(), cmd);
         }
 
         {
-            let cmd: Box<dyn Command> = Box::new(CmdAddCoord);
+            let cmd: Box<dyn Command> = Box::new(CmdCoordAdd);
             map.insert(cmd.name().to_string(), cmd);
         }
 
         {
             let cmd: Box<dyn Command> = Box::new(CmdFind);
+            map.insert(cmd.name().to_string(), cmd);
+        }
+
+        {
+            let cmd: Box<dyn Command> = Box::new(CmdCogPerms);
             map.insert(cmd.name().to_string(), cmd);
         }
 
@@ -89,10 +95,11 @@ impl Module for ModCoords {
 
     fn aliases(&self) -> &[(&str, &str)] {
         &[
-            ("addcog", "coords addcog"),
-            ("addcoord", "coords addcoord"),
+            ("cogadd", "coords cogedit"),
+            ("coordadd", "coords coordadd"),
             ("cog", "coords cog"),
-            ("editcog", "coords editcog"),
+            ("cogedit", "coords cogedit"),
+            ("cogperms", "coords cogperms"),
             ("find", "coords find"),
         ]
     }

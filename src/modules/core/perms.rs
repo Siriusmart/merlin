@@ -7,12 +7,12 @@ use serenity::{
 
 use crate::{sys::Command, Clearance, MasterSwitch, PerCommandConfig};
 
-pub struct CmdPerm;
+pub struct CmdPerms;
 
 #[async_trait]
-impl Command for CmdPerm {
+impl Command for CmdPerms {
     fn name(&self) -> &str {
-        "perm"
+        "perms"
     }
 
     fn description(&self) -> &str {

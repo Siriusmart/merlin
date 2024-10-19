@@ -11,12 +11,12 @@ use super::{
     coord::{Coord, Dimension},
 };
 
-pub struct CmdAddCoord;
+pub struct CmdCoordAdd;
 
 #[async_trait]
-impl Command for CmdAddCoord {
+impl Command for CmdCoordAdd {
     fn name(&self) -> &str {
-        "addcoord"
+        "coordadd"
     }
 
     fn description(&self) -> &str {

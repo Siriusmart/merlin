@@ -2,7 +2,7 @@ mod keys;
 mod module;
 
 mod clearance;
-mod perm;
+mod perms;
 mod ping;
 mod reload;
 mod save;

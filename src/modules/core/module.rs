@@ -7,7 +7,7 @@ use crate::{Command, CommandHandler, Module};
 use super::{
     clearance::CmdClearance,
     keys::{ShardManagerContainer, StartInstanceContainer},
-    perm::CmdPerm,
+    perms::CmdPerms,
     ping::CmdPing,
     reload::CmdReload,
     save::CmdSave,
@@ -64,7 +64,7 @@ impl ModCore {
         }
 
         {
-            let cmd: Box<dyn Command> = Box::new(CmdPerm);
+            let cmd: Box<dyn Command> = Box::new(CmdPerms);
             map.insert(cmd.name().to_string(), cmd);
         }
 
@@ -103,7 +103,7 @@ impl Module for ModCore {
             ("save", "core save"),
             ("clearance", "core clearance"),
             ("preset", "core clearance"),
-            ("perm", "core perm"),
+            ("perms", "core perms"),
         ]
     }
 }
