@@ -27,7 +27,10 @@ impl Command for CmdFind {
     }
 
     fn usage(&self) -> &[&str] {
-        &["(name) (cog=value|page=value|near=x,z,radius)", "*"]
+        &[
+            "(name) (cog=value|page=value|near=x,z,radius|dim=ow/nether/end)",
+            "*",
+        ]
     }
 
     async fn run(&self, mut args: &[&str], ctx: &Context, msg: &Message) -> bool {
@@ -92,11 +95,21 @@ impl Command for CmdFind {
 
                         near = Some((x.unwrap(), z.unwrap(), r.unwrap().pow(2) as i64))
                     }
+                    "dim" if matches!(right, "ow" | "nether" | "end") => {
+                        filter.insert("dim", right).unwrap();
+                    }
                     _ => return false,
                 }
             } else {
                 return false;
             }
+        }
+
+        if filter.contains_key("near") || !filter.contains_key("dim") {
+            let _ = msg
+                .reply(ctx, "Nearby search requires dimension to be specified.")
+                .await;
+            return true;
         }
 
         let mut cursor = unsafe { COORDS.get() }.unwrap().find(filter).await.unwrap();
@@ -160,7 +173,7 @@ impl Command for CmdFind {
                             },
                             entry.x,
                             entry.z,
-                            entry.dim.unwrap_or_default(),
+                            entry.dim,
                             if let Ok(user) = UserId::new(entry.author_id).to_user(ctx).await {
                                 format!("\n\n*Entry added by {}.*", user.name)
                             } else {

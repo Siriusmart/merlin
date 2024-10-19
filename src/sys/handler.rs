@@ -227,7 +227,7 @@ impl CommandHandler {
         }
     }
 
-    pub async fn load() {
+    pub async fn load(reload: bool) {
         let switch = MasterSwitch::get_mut_self();
         let mut switch_modified = false;
 
@@ -257,7 +257,11 @@ impl CommandHandler {
                 }
             }
 
-            module.setup().await;
+            if reload {
+                module.reload().await
+            } else {
+                module.setup().await;
+            }
 
             for (from, to) in module.aliases() {
                 handler.alias.insert(from.to_string(), to.to_string());
@@ -277,6 +281,6 @@ impl CommandHandler {
 
     pub async fn reload() {
         unsafe { HANDLER = OnceLock::new() };
-        Self::load().await;
+        Self::load(true).await;
     }
 }

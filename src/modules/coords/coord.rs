@@ -46,12 +46,6 @@ impl Display for Dimension {
     }
 }
 
-impl Default for Dimension {
-    fn default() -> Self {
-        Self::Overworld
-    }
-}
-
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Coord {
     #[serde(rename = "_id")]
@@ -64,8 +58,8 @@ pub struct Coord {
     pub x: i64,
     pub z: i64,
     pub author_id: u64,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub dim: Option<Dimension>,
+    pub dim: Dimension,
+    pub added: i64,
 }
 
 impl CollectionItem<i64> for Coord {
@@ -84,7 +78,7 @@ impl Coord {
         subcog: i64,
         x: i64,
         z: i64,
-        dim: Option<Dimension>,
+        dim: Dimension,
     ) -> Result<Self, &'static str> {
         let name = display_name.replace(' ', "-").to_lowercase();
 
@@ -116,6 +110,7 @@ impl Coord {
             z,
             x,
             dim,
+            added: chrono::Utc::now().timestamp(),
         };
 
         new.save_create(unsafe { COORDS.get() }.unwrap())
@@ -229,9 +224,7 @@ impl Coord {
                 continue;
             }
 
-            if (x - coord.x).pow(2) + (z - coord.z).pow(2) <= r2
-                && coord.dim.unwrap_or_default() == dim
-            {
+            if (x - coord.x).pow(2) + (z - coord.z).pow(2) <= r2 && coord.dim == dim {
                 return Some(coord);
             }
         }

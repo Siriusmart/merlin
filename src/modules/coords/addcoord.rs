@@ -7,10 +7,9 @@ use crate::{sys::Command, Clearance};
 
 use super::{
     category::Category,
+    config::COORDS_CONFIG,
     coord::{Coord, Dimension},
 };
-
-const PREVENT_RADIUS: u64 = 100;
 
 pub struct CmdAddCoord;
 
@@ -25,26 +24,28 @@ impl Command for CmdAddCoord {
     }
 
     fn usage(&self) -> &[&str] {
-        &["[name] (ow|nether|end) [x] [z] (category) (description)"]
+        &["[name] [ow|nether|end] [x] [z] (category) (description)"]
     }
 
     async fn run(&self, args: &[&str], ctx: &Context, msg: &Message) -> bool {
         let (name, dim, x, z, cog, desc) = match args {
             [name, dim, x, z, cog, desc] if matches!(*dim, "ow" | "nether" | "end") => {
-                (name, Some(dim), *x, *z, *cog, *desc)
+                (name, dim, *x, *z, *cog, *desc)
             }
             [name, dim, x, z, cog] if matches!(*dim, "ow" | "nether" | "end") => {
-                (name, Some(dim), *x, *z, *cog, "")
+                (name, dim, *x, *z, *cog, "")
             }
             [name, dim, x, z] if matches!(*dim, "ow" | "nether" | "end") => {
-                (name, Some(dim), *x, *z, "generic.unspecified", "")
+                (name, dim, *x, *z, "generic.unspecified", "")
             }
-            [name, x, z, cog] => (name, None, *x, *z, *cog, ""),
-            [name, x, z] => (name, None, *x, *z, "generic.unspecified", ""),
             _ => return false,
         };
 
-        let dim = dim.and_then(|dim| Dimension::from_str(dim));
+        let dim = if let Some(dim) = Dimension::from_str(dim) {
+            dim
+        } else {
+            return false;
+        };
 
         let (category, cog_id, subcog_id) =
             if let Some((category, cog, subcog)) = Category::cogs_from_name(cog).await {
@@ -87,8 +88,15 @@ impl Command for CmdAddCoord {
         let x = x.unwrap();
         let z = z.unwrap();
 
-        if let Some(entry) =
-            Coord::find_near(x, z, PREVENT_RADIUS, dim.unwrap_or_default(), ctx, msg).await
+        if let Some(entry) = Coord::find_near(
+            x,
+            z,
+            unsafe { COORDS_CONFIG.get() }.unwrap().prevent_add_radius,
+            dim,
+            ctx,
+            msg,
+        )
+        .await
         {
             let _ = msg
                 .reply(

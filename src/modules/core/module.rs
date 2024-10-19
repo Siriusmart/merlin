@@ -89,10 +89,8 @@ impl Module for ModCore {
     async fn setup(&mut self) {
         let client = CommandHandler::client_mut();
         let mut data = client.data.write().await;
-        data.entry::<ShardManagerContainer>()
-            .or_insert(client.shard_manager.clone());
-        data.entry::<StartInstanceContainer>()
-            .or_insert(StartInstanceContainer::new());
+        data.insert::<ShardManagerContainer>(client.shard_manager.clone());
+        data.insert::<StartInstanceContainer>(StartInstanceContainer::new());
     }
 
     fn aliases(&self) -> &[(&str, &str)] {

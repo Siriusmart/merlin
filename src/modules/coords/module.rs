@@ -12,6 +12,7 @@ use super::{
     addcoord::CmdAddCoord,
     cog::CmdCog,
     collection::{CATEGORIES, COORDS},
+    config::CoordsConfig,
     editcog::CmdEditCog,
     find::CmdFind,
 };
@@ -72,13 +73,15 @@ impl Module for ModCoords {
     }
 
     async fn setup(&mut self) {
-        if unsafe { CATEGORIES.get() }.is_some() {
-            unsafe { CATEGORIES = OnceLock::new() };
-        }
+        CoordsConfig::setup();
+        let _ = unsafe { CATEGORIES.set(Mongo::database().collection("coords-cogs")) };
+        let _ = unsafe { COORDS.set(Mongo::database().collection("coords-coords")) };
+    }
 
-        if unsafe { COORDS.get() }.is_some() {
-            unsafe { COORDS = OnceLock::new() };
-        }
+    async fn reload(&mut self) {
+        CoordsConfig::reload();
+        unsafe { CATEGORIES = OnceLock::new() };
+        unsafe { COORDS = OnceLock::new() };
 
         let _ = unsafe { CATEGORIES.set(Mongo::database().collection("coords-cogs")) };
         let _ = unsafe { COORDS.set(Mongo::database().collection("coords-coords")) };

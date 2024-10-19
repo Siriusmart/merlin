@@ -60,6 +60,7 @@ pub trait Module: Sync + Send + 'static {
     }
 
     async fn setup(&mut self) {}
+    async fn reload(&mut self) {}
 
     fn aliases(&self) -> &[(&str, &str)] {
         &[]

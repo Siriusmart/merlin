@@ -49,7 +49,7 @@ async fn main() {
         .expect("Err creating client");
 
     CommandHandler::client_set(client);
-    CommandHandler::load().await;
+    CommandHandler::load(false).await;
 
     if let Err(e) = CommandHandler::client_mut().start().await {
         println!("Client error: {e:?}");
