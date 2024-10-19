@@ -14,6 +14,9 @@ pub struct CoordsConfig {
     #[serde_inline_default(100)]
     #[serde(rename = "prevent-add-radius")]
     pub prevent_add_radius: u64,
+    #[serde_inline_default(5)]
+    #[serde(rename = "page-size")]
+    pub page_size: u32,
 }
 
 impl Config for CoordsConfig {

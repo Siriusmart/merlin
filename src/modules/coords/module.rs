@@ -15,6 +15,7 @@ use super::{
     collection::{CATEGORIES, COORDS},
     config::CoordsConfig,
     coordadd::CmdCoordAdd,
+    coordedit::CmdCoordEdit,
     find::CmdFind,
 };
 
@@ -60,6 +61,11 @@ impl ModCoords {
             map.insert(cmd.name().to_string(), cmd);
         }
 
+        {
+            let cmd: Box<dyn Command> = Box::new(CmdCoordEdit);
+            map.insert(cmd.name().to_string(), cmd);
+        }
+
         Self(Arc::new(map))
     }
 }
@@ -100,6 +106,7 @@ impl Module for ModCoords {
             ("cog", "coords cog"),
             ("cogedit", "coords cogedit"),
             ("cogperms", "coords cogperms"),
+            ("coordedit", "coords coordedit"),
             ("find", "coords find"),
         ]
     }

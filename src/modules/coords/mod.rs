@@ -10,6 +10,7 @@ mod cogperms;
 mod config;
 mod coord;
 mod coordadd;
+mod coordedit;
 mod find;
 
 pub use module::ModCoords;

@@ -10,9 +10,7 @@ use serenity::{
 
 use crate::sys::Command;
 
-use super::{category::Category, collection::COORDS};
-
-const PAGE_SIZE: usize = 5;
+use super::{category::Category, collection::COORDS, config::COORDS_CONFIG};
 
 pub struct CmdFind;
 
@@ -89,7 +87,7 @@ impl Command for CmdFind {
                         let r = args[2].parse::<u64>();
 
                         if x.is_err() || z.is_err() || r.is_err() {
-                            let _ = msg.reply(ctx, "Could not parse nearbly arguments.").await;
+                            let _ = msg.reply(ctx, "Could not parse nearby arguments.").await;
                             return true;
                         }
 
@@ -105,7 +103,7 @@ impl Command for CmdFind {
             }
         }
 
-        if filter.contains_key("near") || !filter.contains_key("dim") {
+        if filter.contains_key("near") && !filter.contains_key("dim") {
             let _ = msg
                 .reply(ctx, "Nearby search requires dimension to be specified.")
                 .await;
@@ -114,13 +112,15 @@ impl Command for CmdFind {
 
         let mut cursor = unsafe { COORDS.get() }.unwrap().find(filter).await.unwrap();
 
-        let to_skip = page.unwrap_or(0).saturating_sub(1) * PAGE_SIZE as u32;
+        let to_skip =
+            page.unwrap_or(0).saturating_sub(1) * unsafe { COORDS_CONFIG.get() }.unwrap().page_size;
         let mut skipped: u32 = 0;
 
         // allowed, display_name, name
         let mut clearance_lookup: HashMap<(i64, i64), (bool, String, String)> = HashMap::new();
 
-        let mut entries = Vec::with_capacity(PAGE_SIZE);
+        let mut entries =
+            Vec::with_capacity(unsafe { COORDS_CONFIG.get() }.unwrap().page_size as usize);
 
         while let Some(entry) = cursor.next().await {
             let entry = entry.unwrap();
@@ -142,7 +142,7 @@ impl Command for CmdFind {
 
             entries.push(entry);
 
-            if entries.len() == PAGE_SIZE {
+            if entries.len() == unsafe { COORDS_CONFIG.get() }.unwrap().page_size as usize {
                 break;
             }
         }

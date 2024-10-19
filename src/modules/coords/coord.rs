@@ -69,6 +69,14 @@ impl CollectionItem<i64> for Coord {
 }
 
 impl Coord {
+    pub async fn find_by_name(name: &str) -> Option<Self> {
+        unsafe { COORDS.get() }
+            .unwrap()
+            .find_one(doc! { "name": &name })
+            .await
+            .unwrap()
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub async fn new(
         display_name: String,
