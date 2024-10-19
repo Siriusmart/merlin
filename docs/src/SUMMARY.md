@@ -8,8 +8,8 @@
 
 - [Modules](./modules/index.md)
     - [Switches](./modules/switches.md)
-    - [Permissions]()
-    - [Clearance levels]()
+    - [Permissions](./modules/permissions.md)
+    - [Clearance levels](./modules/clearance.md)
 
 # Configuration
 
