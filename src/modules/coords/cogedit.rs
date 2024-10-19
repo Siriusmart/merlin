@@ -33,6 +33,13 @@ impl Command for CmdCogEdit {
             _ => return false,
         };
 
+        if main.to_lowercase().as_str() == "generic"
+            || sub.is_some_and(|sub| sub.to_lowercase().as_str() == "unspecified")
+        {
+            let _ = msg.reply(ctx, "You cannot edit a system category.").await;
+            return true;
+        }
+
         let mut new_desc = None;
         let mut new_name = None;
         let mut new_display = None;

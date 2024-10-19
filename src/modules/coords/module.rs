@@ -12,10 +12,12 @@ use super::{
     cogadd::CmdCogAdd,
     cogedit::CmdCogEdit,
     cogperms::CmdCogPerms,
+    cogrm::CmdCogRm,
     collection::{CATEGORIES, COORDS},
     config::CoordsConfig,
     coordadd::CmdCoordAdd,
     coordedit::CmdCoordEdit,
+    coordrm::CmdCoordRm,
     find::CmdFind,
 };
 
@@ -66,6 +68,16 @@ impl ModCoords {
             map.insert(cmd.name().to_string(), cmd);
         }
 
+        {
+            let cmd: Box<dyn Command> = Box::new(CmdCoordRm);
+            map.insert(cmd.name().to_string(), cmd);
+        }
+
+        {
+            let cmd: Box<dyn Command> = Box::new(CmdCogRm);
+            map.insert(cmd.name().to_string(), cmd);
+        }
+
         Self(Arc::new(map))
     }
 }
@@ -101,13 +113,15 @@ impl Module for ModCoords {
 
     fn aliases(&self) -> &[(&str, &str)] {
         &[
-            ("cogadd", "coords cogedit"),
+            ("cogadd", "coords cogadd"),
             ("coordadd", "coords coordadd"),
             ("cog", "coords cog"),
             ("cogedit", "coords cogedit"),
             ("cogperms", "coords cogperms"),
             ("coordedit", "coords coordedit"),
             ("find", "coords find"),
+            ("coordrm", "coords coordrm"),
+            ("cogrm", "coords cogrm"),
         ]
     }
 }

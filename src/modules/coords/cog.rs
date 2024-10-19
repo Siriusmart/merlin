@@ -65,16 +65,22 @@ impl Command for CmdCog {
             }
         };
 
-        if main.to_lowercase() == "generic"
-            || sub.is_some_and(|sub| sub.to_lowercase() == "unspecified")
-        {
-            let _ = msg
-                .reply(
-                    ctx,
-                    "This category is made of magic, try using it as a filter instead.",
-                )
-                .await;
-            return true;
+        let sublower = sub.map(str::to_lowercase).unwrap_or(String::new());
+
+        match (main.to_lowercase().as_str(), sublower.as_str()) {
+            ("generic", "") => {
+                let _ = msg.reply(ctx, "**[Coords category] generic**\nSystem categories of special function.\n\n**Subcategories**\n\\- unspecified\n\\- private").await;
+                return true;
+            }
+            ("generic", "private") => {
+                let _ = msg.reply(ctx, "**[Coords category] generic.private**\nOnly the author can see entries in this category.").await;
+                return true;
+            }
+            (main, "unspecified") => {
+                let _ = msg.reply(ctx, format!("**[Coords category] {main}.unspecified**\nThe default subcategory for {main}.")).await;
+                return true;
+            }
+            _ => {}
         }
 
         let cog = if let Some(cog) = Category::get(main).await {

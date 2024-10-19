@@ -35,6 +35,13 @@ impl Command for CmdCogPerms {
             _ => return false,
         };
 
+        if main.to_lowercase().as_str() == "generic"
+            || sub.is_some_and(|sub| sub.to_lowercase().as_str() == "unspecified")
+        {
+            let _ = msg.reply(ctx, "You cannot edit a system category.").await;
+            return true;
+        }
+
         let mut cog = if let Some(cog) = Category::get(main).await {
             cog
         } else {

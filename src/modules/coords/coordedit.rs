@@ -276,7 +276,14 @@ impl Command for CmdCoordEdit {
         }
 
         let _ = msg
-            .reply(ctx, format!("{} entries updated.", entries.len()))
+            .reply(
+                ctx,
+                format!(
+                    "{} entrie{} updated.",
+                    entries.len(),
+                    if entries.len() > 1 { "s" } else { "" }
+                ),
+            )
             .await;
 
         true

@@ -92,6 +92,11 @@ async fn addmain(name: &str, desc: &str, ctx: &Context, msg: &Message) {
 async fn addsub(name: &str, desc: &str, ctx: &Context, msg: &Message) {
     let (main, sub) = name.split_once('.').unwrap();
 
+    if main.to_lowercase().as_str() == "generic" {
+        let _ = msg.reply(ctx, "You cannot edit a system category.").await;
+        return;
+    }
+
     if sub.contains('.') {
         let _ = msg
             .reply(ctx, "The maximum depth for nested categories is 2.")
