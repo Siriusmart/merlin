@@ -24,19 +24,22 @@ impl Command for CmdCoordAdd {
     }
 
     fn usage(&self) -> &[&str] {
-        &["[name] [ow|nether|end] [x] [z] (category) (description)"]
+        &["[name] [ow|nether|end] [x] [z] (category) (description) (tag1,tag2...)"]
     }
 
     async fn run(&self, args: &[&str], ctx: &Context, msg: &Message) -> bool {
-        let (name, dim, x, z, cog, desc) = match args {
+        let (name, dim, x, z, cog, desc, tags) = match args {
+            [name, dim, x, z, cog, desc, tags] if matches!(*dim, "ow" | "nether" | "end") => {
+                (name, dim, *x, *z, *cog, *desc, *tags)
+            }
             [name, dim, x, z, cog, desc] if matches!(*dim, "ow" | "nether" | "end") => {
-                (name, dim, *x, *z, *cog, *desc)
+                (name, dim, *x, *z, *cog, *desc, "")
             }
             [name, dim, x, z, cog] if matches!(*dim, "ow" | "nether" | "end") => {
-                (name, dim, *x, *z, *cog, "")
+                (name, dim, *x, *z, *cog, "", "")
             }
             [name, dim, x, z] if matches!(*dim, "ow" | "nether" | "end") => {
-                (name, dim, *x, *z, "generic.unspecified", "")
+                (name, dim, *x, *z, "generic.unspecified", "", "")
             }
             _ => return false,
         };
@@ -124,6 +127,10 @@ impl Command for CmdCoordAdd {
             x,
             z,
             dim,
+            tags.split(',')
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
+                .collect(),
         )
         .await;
 

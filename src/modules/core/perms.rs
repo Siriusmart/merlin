@@ -190,7 +190,7 @@ impl Command for CmdPerms {
                     return true;
                 }
 
-                if !Clearance::validate(&args[1..]) {
+                if !Clearance::validate(&args[1..], true) {
                     let _ = msg
                         .reply(
                             ctx,
@@ -198,6 +198,26 @@ impl Command for CmdPerms {
                         )
                         .await;
                     return true;
+                }
+
+                let mut allowed = args[1..].iter().map(|s| s.to_string()).collect::<Vec<_>>();
+
+                for rule in allowed.iter_mut() {
+                    if rule.chars().nth(1) == Some('&') && !rule.contains(':') {
+                        if msg.guild_id.is_none() {
+                            let _ = msg
+                                .reply(ctx, "Server ID of role based rules cannot be inferred.")
+                                .await;
+                            return true;
+                        }
+
+                        *rule = format!(
+                            "{}{}:{}",
+                            &rule[0..2],
+                            msg.guild_id.unwrap().get(),
+                            &rule[3..]
+                        );
+                    }
                 }
 
                 match command {
@@ -208,7 +228,7 @@ impl Command for CmdPerms {
                             .get_mut(cmd)
                             .unwrap();
 
-                        percmd.allowed = args[1..].iter().map(|s| s.to_string()).collect();
+                        percmd.allowed = allowed;
 
                         let _ = msg
                             .reply(
@@ -223,7 +243,7 @@ impl Command for CmdPerms {
                     None => {
                         let permod = MasterSwitch::get_mut(module).unwrap();
 
-                        permod.allowed = args[1..].iter().map(|s| s.to_string()).collect();
+                        permod.allowed = allowed;
 
                         let _ = msg
                             .reply(

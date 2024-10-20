@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use mongodb::bson::Document;
+use mongodb::bson::{doc, Document};
 use serenity::{
     all::{Context, Message},
     async_trait,
@@ -29,7 +29,7 @@ impl Command for CmdCoordEdit {
 
     fn usage(&self) -> &[&str] {
         &[
-            "(name|*) (cog=value|near=x,z,radius|dim=ow/nether/end...) (newname=value|newdesc=value|newcog=value|newpos=x,z|newdim=ow/nether/end...)",
+            "(name|*) (cog=value|near=x,z,radius|dim=ow/nether/end...|tags=tag1,tag2...) (newname=value|newdesc=value|newcog=value|newpos=x,z|newdim=ow/nether/end...|newtags=tag1,tag2...)",
         ]
     }
 
@@ -56,6 +56,7 @@ impl Command for CmdCoordEdit {
         let mut newcog = None;
         let mut newpos = None;
         let mut newdim = None;
+        let mut newtags = None;
 
         for arg in args.iter() {
             if let Some((left, right)) = arg.split_once('=') {
@@ -95,12 +96,24 @@ impl Command for CmdCoordEdit {
                     "dim" if matches!(right, "ow" | "nether" | "end") => {
                         filter.insert("dim", right).unwrap();
                     }
+                    "tags" => {
+                        filter.insert("tags", doc! {"$all": right.split(',').map(|s| s.trim()).filter(|s| !s.is_empty()).collect::<Vec<_>>()});
+                    }
                     "newname" => newdisplay = Some(right),
                     "newdesc" => newdesc = Some(right),
                     "newcog" => newcog = Some(right),
                     "newpos" => newpos = Some(right),
                     "newdim" if matches!(right, "ow" | "nether" | "end") => {
                         newdim = Some(Dimension::from_str(right).unwrap())
+                    }
+                    "newtags" => {
+                        newtags = Some(
+                            right
+                                .split(',')
+                                .map(|s| s.trim().to_string())
+                                .filter(|s| !s.is_empty())
+                                .collect::<Vec<_>>(),
+                        )
                     }
                     _ => return false,
                 }
@@ -267,6 +280,10 @@ impl Command for CmdCoordEdit {
 
             if let Some(dim) = newdim {
                 entry.dim = dim;
+            }
+
+            if let Some(tags) = &newtags {
+                entry.tags = tags.clone();
             }
 
             entry

@@ -2,7 +2,7 @@ use std::{collections::HashMap, hash::Hash, sync::OnceLock};
 
 use async_recursion::async_recursion;
 use serde::{Deserialize, Serialize};
-use serenity::all::{Context, Message, RoleId};
+use serenity::all::{Context, GuildId, Message, RoleId};
 
 use super::Config;
 
@@ -64,7 +64,7 @@ impl Clearance {
             return false;
         }
 
-        if !Self::validate(list) {
+        if !Self::validate(list, true) {
             return false;
         }
 
@@ -76,9 +76,12 @@ impl Clearance {
         true
     }
 
-    pub fn validate(allowed_list: &[&str]) -> bool {
+    pub fn validate(allowed_list: &[&str], presets: bool) -> bool {
         for entry in allowed_list {
-            if entry.chars().next() == Some('?') {
+            if entry.starts_with('?') {
+                if !presets {
+                    return false;
+                }
                 continue;
             }
 
@@ -151,28 +154,28 @@ impl Clearance {
                     }
                 }
                 '&' => {
-                    if msg.guild_id.is_some()
-                        && msg
-                            .author
-                            .has_role(
-                                ctx,
-                                msg.guild_id.unwrap(),
-                                match entry[2..].parse() {
-                                    Ok(id) => RoleId::new(id),
-                                    Err(_) => msg
-                                        .guild_id
-                                        .unwrap()
-                                        .roles(ctx)
-                                        .await
-                                        .unwrap()
-                                        .values()
-                                        .find(|role| role.name.as_str() == &entry[2..])
-                                        .map(|role| role.id)
-                                        .unwrap_or_else(|| RoleId::new(1)),
-                                },
-                            )
-                            .await
-                            .unwrap()
+                    let (guild, role) = entry[2..].split_once(':').unwrap_or(("", ""));
+                    let guild = GuildId::new(guild.parse().unwrap_or_default());
+
+                    if msg
+                        .author
+                        .has_role(
+                            ctx,
+                            guild,
+                            match role.parse() {
+                                Ok(id) => RoleId::new(id),
+                                Err(_) => guild
+                                    .roles(ctx)
+                                    .await
+                                    .unwrap_or_default()
+                                    .values()
+                                    .find(|role| role.name.as_str() == &entry[2..])
+                                    .map(|role| role.id)
+                                    .unwrap_or_else(|| RoleId::new(1)),
+                            },
+                        )
+                        .await
+                        .unwrap_or(false)
                     {
                         return Some(entry_allowed);
                     }

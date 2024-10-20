@@ -60,6 +60,8 @@ pub struct Coord {
     pub author_id: u64,
     pub dim: Dimension,
     pub added: i64,
+    #[serde(default)]
+    pub tags: Vec<String>,
 }
 
 impl CollectionItem<i64> for Coord {
@@ -87,6 +89,7 @@ impl Coord {
         x: i64,
         z: i64,
         dim: Dimension,
+        tags: Vec<String>,
     ) -> Result<Self, &'static str> {
         let name = display_name.replace(' ', "-").to_lowercase();
 
@@ -119,6 +122,7 @@ impl Coord {
             x,
             dim,
             added: chrono::Utc::now().timestamp(),
+            tags,
         };
 
         new.save_create(unsafe { COORDS.get() }.unwrap())

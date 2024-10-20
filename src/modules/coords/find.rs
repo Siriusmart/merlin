@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::fmt::Write;
 
-use mongodb::bson::Document;
+use mongodb::bson::{doc, Document};
 use serenity::{
     all::{Context, Message, UserId},
     async_trait,
@@ -95,6 +95,9 @@ impl Command for CmdFind {
                     }
                     "dim" if matches!(right, "ow" | "nether" | "end") => {
                         filter.insert("dim", right).unwrap();
+                    }
+                    "tags" => {
+                        filter.insert("tags", doc! {"$all": right.split(',').map(|s| s.trim()).filter(|s| !s.is_empty()).collect::<Vec<_>>()});
                     }
                     _ => return false,
                 }

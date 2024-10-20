@@ -43,12 +43,14 @@ Here's a list of all conditions
 |`server`|The command is ran in a server.|
 |`@user_name`|The user has the specified username.|
 |`@user_id`|The user has the specified user ID.|
-|`&role_name`|The user has the specified role.|
-|`&role_id`|The user has the specified role of the ID.|
+|`&server_id:role_name`|The user has the specified role.|
+|`&server_id:role_id`|The user has the specified role of the ID.|
 |`#channel_name`|The command is ran in a channel with the specified name.|
 |`#channel_id`|The command is ran in a channel with the specified channel ID.|
 |~~`%server_name`~~|WIP|
 |~~`%server_id`~~|WIP|
+
+> Adding a role permissions in a server will automatically prepend it the rule with the server ID.
 
 ## Changing permissions
 
