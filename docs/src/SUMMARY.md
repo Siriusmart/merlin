@@ -24,14 +24,14 @@
 - [Features](./features/index.md)
     - [core]()
     - [coords](./features/coords/index.md)
-        - [cogadd]()
-        - [cogedit]()
-        - [cogrm]()
-        - [cogperms]()
-        - [coordadd]()
-        - [coordedit]()
-        - [coordrm]()
-        - [find]()
+        - [cogadd](./features/coords/cogadd.md)
+        - [cogedit](./features/coords/cogedit.md)
+        - [cogrm](./features/coords/cogrm.md)
+        - [cogperms](./features/coords/cogperms.md)
+        - [coordadd](./features/coords/coordadd.md)
+        - [find](./features/coords/find.md)
+        - [coordedit](./features/coords/coordedit.md)
+        - [coordrm](./features/coords/coordrm.md)
 
 # Development
 

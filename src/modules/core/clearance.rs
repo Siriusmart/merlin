@@ -110,9 +110,22 @@ impl Command for CmdClearance {
                         )
                         .await;
                 } else {
-                    Clearance::set(preset.to_string(), &args[1..]);
+                    let mut args = args
+                        .iter()
+                        .skip(1)
+                        .map(|s| s.to_string())
+                        .collect::<Vec<_>>();
+                    Clearance::map_rules(&mut args, msg, ctx).await;
+                    Clearance::set(
+                        preset.to_string(),
+                        &args.iter().map(String::as_str).collect::<Vec<_>>(),
+                    );
+
                     let _ = msg
-                        .reply(ctx, format!("Clearance preset **{preset}** updated.",))
+                        .reply(
+                            ctx,
+                            format!("Clearance preset **{preset}** updated. *(not saved)*",),
+                        )
                         .await;
                 }
             }

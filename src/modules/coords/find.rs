@@ -26,7 +26,7 @@ impl Command for CmdFind {
 
     fn usage(&self) -> &[&str] {
         &[
-            "(name) (cog=value|page=value|near=x,z,radius|dim=ow/nether/end)",
+            "(name) (cog=value|page=value|near=x,z,radius|dim=ow/nether/end|tags=tag1,tag2..)",
             "*",
         ]
     }
@@ -97,7 +97,7 @@ impl Command for CmdFind {
                         filter.insert("dim", right).unwrap();
                     }
                     "tags" => {
-                        filter.insert("tags", doc! {"$all": right.split(',').map(|s| s.trim()).filter(|s| !s.is_empty()).collect::<Vec<_>>()});
+                        filter.insert("tags", doc! { "$all": right.split(',').map(|s| s.trim()).filter(|s| !s.is_empty()).collect::<Vec<_>>()});
                     }
                     _ => return false,
                 }
@@ -113,7 +113,12 @@ impl Command for CmdFind {
             return true;
         }
 
-        let mut cursor = unsafe { COORDS.get() }.unwrap().find(filter).await.unwrap();
+        let mut cursor = unsafe { COORDS.get() }
+            .unwrap()
+            .find(filter)
+            .sort(doc! {"$natural": -1})
+            .await
+            .unwrap();
 
         let to_skip =
             page.unwrap_or(0).saturating_sub(1) * unsafe { COORDS_CONFIG.get() }.unwrap().page_size;
@@ -150,6 +155,8 @@ impl Command for CmdFind {
             }
         }
 
+        let has_next_page = cursor.next().await.is_some();
+
         match entries.len() {
             0 => {
                 let _ = msg.reply(ctx, "No maching results found.").await;
@@ -161,7 +168,7 @@ impl Command for CmdFind {
                     .reply(
                         ctx,
                         format!(
-                            "**[{}{}] {}**\n{}\n\nx={} z={} in the {}{}",
+                            "**[{}{}] {}**\n{}\n{}\n\nx={} z={} in the {}{}",
                             display,
                             if display != name {
                                 format!(" **({name})**")
@@ -173,6 +180,11 @@ impl Command for CmdFind {
                                 "This entry has no description."
                             } else {
                                 entry.description.as_str()
+                            },
+                            if entry.tags.is_empty() {
+                                "This entry isn't tagged.".to_string()
+                            } else {
+                                format!("Tags: {}", entry.tags.join(", "))
                             },
                             entry.x,
                             entry.z,
@@ -191,7 +203,7 @@ impl Command for CmdFind {
                     .reply(
                         ctx,
                         format!(
-                            "Showing {} results.{}",
+                            "Showing {} results.{}{}",
                             entries.len(),
                             entries.iter().zip(to_skip + 1..).fold(
                                 String::new(),
@@ -200,7 +212,7 @@ impl Command for CmdFind {
                                         clearance_lookup.get(&(entry.cog, entry.subcog)).unwrap();
                                     write!(
                                         current,
-                                        "\n{no}. **{}**{} in {}{}",
+                                        "\n{no}. **{}**{} in {}{}{}",
                                         entry.display_name,
                                         if entry.display_name != entry.name {
                                             format!(" ({})", entry.name)
@@ -212,12 +224,22 @@ impl Command for CmdFind {
                                             format!(" ({})", name)
                                         } else {
                                             String::new()
+                                        },
+                                        if entry.tags.is_empty() {
+                                            String::new()
+                                        } else {
+                                            format!(" (tags: {})", entry.tags.join(", "))
                                         }
                                     )
                                     .unwrap();
                                     current
                                 }
-                            )
+                            ),
+                            if has_next_page {
+                                "\n*(continued next page)*"
+                            } else {
+                                ""
+                            }
                         ),
                     )
                     .await;

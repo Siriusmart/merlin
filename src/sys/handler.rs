@@ -61,7 +61,7 @@ impl CommandHandler {
 
             let handler = unsafe { HANDLER.get() }.unwrap();
 
-            if let Some(module) = handler.modules.get(args[0]) {
+            if let Some(module) = handler.modules.get(args[0].to_lowercase().as_str()) {
                 module.run(&args[1..], ctx, msg).await;
             } else {
                 for i in 0..args.len() {

@@ -12,6 +12,7 @@ use crate::{sys::Command, Clearance, CollectionItem, PerCommandConfig};
 use super::{
     category::Category,
     collection::COORDS,
+    config::COORDS_CONFIG,
     coord::{Coord, Dimension},
 };
 
@@ -97,7 +98,7 @@ impl Command for CmdCoordEdit {
                         filter.insert("dim", right).unwrap();
                     }
                     "tags" => {
-                        filter.insert("tags", doc! {"$all": right.split(',').map(|s| s.trim()).filter(|s| !s.is_empty()).collect::<Vec<_>>()});
+                        filter.insert("tags", doc! { "$all": right.split(',').map(|s| s.trim()).filter(|s| !s.is_empty()).collect::<Vec<_>>()});
                     }
                     "newname" => newdisplay = Some(right),
                     "newdesc" => newdesc = Some(right),
@@ -125,6 +126,16 @@ impl Command for CmdCoordEdit {
         if filter.contains_key("near") && !filter.contains_key("dim") {
             let _ = msg
                 .reply(ctx, "Nearby search requires dimension to be specified.")
+                .await;
+            return true;
+        }
+
+        if newpos.is_some() && newdim.is_none() {
+            let _ = msg
+                .reply(
+                    ctx,
+                    "Updating position requires new dimension to be specified.",
+                )
                 .await;
             return true;
         }
@@ -223,7 +234,7 @@ impl Command for CmdCoordEdit {
         };
 
         let newpos = if let Some(newpos) = newpos {
-            let res = if let Some((x, z)) = newpos.split_once('.') {
+            let res = if let Some((x, z)) = newpos.split_once(',') {
                 let x = x.parse::<i64>();
                 let z = z.parse::<i64>();
 
@@ -251,11 +262,53 @@ impl Command for CmdCoordEdit {
             None
         };
 
-        if newname.is_none() && newdesc.is_none() && newcog.is_none() && newdim.is_none() {
+        if newname.is_none()
+            && newdesc.is_none()
+            && newcog.is_none()
+            && newdim.is_none()
+            && newpos.is_none()
+            && newtags.is_none()
+        {
             let _ = msg
                 .reply(ctx, "Update failed because no fields are changed.")
                 .await;
             return true;
+        }
+
+        if entries.len() > 1 && newpos.is_some() {
+            let _ = msg
+                .reply(ctx, "Bulk editing location is not supported.")
+                .await;
+            return true;
+        }
+
+        if let Some((x, z)) = newpos {
+            if let Some(entry) = Coord::find_near(
+                x,
+                z,
+                unsafe { COORDS_CONFIG.get() }.unwrap().prevent_add_radius,
+                newdim.unwrap(),
+                ctx,
+                msg,
+            )
+            .await
+            {
+                let _ = msg
+                    .reply(
+                        ctx,
+                        format!(
+                            "There is another entry nearby, consider updating **{}**{} instead.",
+                            entry.display_name,
+                            if entry.display_name == entry.name {
+                                String::new()
+                            } else {
+                                format!(" ({})", entry.name)
+                            }
+                        ),
+                    )
+                    .await;
+                return true;
+            }
         }
 
         for entry in entries.iter_mut() {
@@ -285,7 +338,23 @@ impl Command for CmdCoordEdit {
             if let Some(tags) = &newtags {
                 entry.tags = tags.clone();
             }
+        }
 
+        if newcog == Some((0, Some(1)))
+            && !entries
+                .iter()
+                .all(|entry| entry.author_id == msg.author.id.get())
+        {
+            let _ = msg
+                .reply(
+                    ctx,
+                    "Entries not moved to generic.private because you don't own all the entries.",
+                )
+                .await;
+            return true;
+        }
+
+        for entry in entries.iter() {
             entry
                 .save_replace(unsafe { COORDS.get() }.unwrap())
                 .await
@@ -296,9 +365,13 @@ impl Command for CmdCoordEdit {
             .reply(
                 ctx,
                 format!(
-                    "{} entrie{} updated.",
+                    "{} {} updated.",
                     entries.len(),
-                    if entries.len() > 1 { "s" } else { "" }
+                    if entries.len() > 1 {
+                        "entries"
+                    } else {
+                        "entry"
+                    }
                 ),
             )
             .await;

@@ -59,6 +59,28 @@ impl Clearance {
         let _ = unsafe { CLEARANCES.set(Clearance::load()) };
     }
 
+    pub async fn map_rules(list: &mut [String], msg: &Message, ctx: &Context) -> bool {
+        for rule in list.iter_mut() {
+            if rule.chars().nth(1) == Some('&') && !rule.contains(':') {
+                if msg.guild_id.is_none() {
+                    let _ = msg
+                        .reply(ctx, "Server ID of role based rules cannot be inferred.")
+                        .await;
+                    return false;
+                }
+
+                *rule = format!(
+                    "{}{}:{}",
+                    &rule[0..2],
+                    msg.guild_id.unwrap().get(),
+                    &rule[2..]
+                );
+            }
+        }
+
+        true
+    }
+
     pub fn set(entry: String, list: &[&str]) -> bool {
         if list.iter().any(|line| line.starts_with('?')) {
             return false;
@@ -132,30 +154,39 @@ impl Clearance {
 
             match entry.chars().nth(1).unwrap() {
                 '@' => {
-                    if msg.author.id.get().to_string().as_str() == &entry[2..]
-                        || msg.author.name.as_str() == &entry[2..]
-                    {
+                    if let Ok(id) = entry[2..].parse::<u64>() {
+                        if id == msg.author.id.get() {
+                            return Some(entry_allowed);
+                        }
+                    } else if msg.author.name.as_str() == &entry[2..] {
                         return Some(entry_allowed);
                     }
                 }
                 '%' => {
-                    if msg.guild_id.is_some_and(|guild| {
-                        guild.get().to_string().as_str() == &entry[2..]
-                            || guild.name(ctx).unwrap() == entry[2..]
-                    }) {
-                        return Some(entry_allowed);
+                    if let Some(guild) = msg.guild_id {
+                        if let Ok(id) = entry[2..].parse::<u64>() {
+                            if id == guild.get() {
+                                return Some(entry_allowed);
+                            }
+                        } else if guild.name(ctx).unwrap() == entry[2..] {
+                            return Some(entry_allowed);
+                        }
                     }
                 }
                 '#' => {
-                    if msg.channel_id.get().to_string().as_str() == &entry[2..]
-                        || msg.channel_id.name(ctx).await.unwrap_or_default() == entry[2..]
+                    if let Ok(id) = entry[2..].parse::<u64>() {
+                        if id == msg.channel_id.get() {
+                            return Some(entry_allowed);
+                        }
+                    } else if msg.guild_id.is_some()
+                        && msg.channel_id.name(ctx).await.unwrap_or_default() == entry[2..]
                     {
                         return Some(entry_allowed);
                     }
                 }
                 '&' => {
                     let (guild, role) = entry[2..].split_once(':').unwrap_or(("", ""));
-                    let guild = GuildId::new(guild.parse().unwrap_or_default());
+                    let guild = GuildId::new(guild.parse().unwrap_or(1));
 
                     if msg
                         .author

@@ -25,7 +25,7 @@ impl Command for CmdCoordRm {
 
     fn usage(&self) -> &[&str] {
         &[
-            "(name) (cog=value|page=value|near=x,z,radius|dim=ow/nether/end)",
+            "(name) (cog=value|page=value|near=x,z,radius|dim=ow/nether/end|tags=tag1,tag2..)",
             "*",
         ]
     }
@@ -94,6 +94,9 @@ impl Command for CmdCoordRm {
                     }
                     "dim" if matches!(right, "ow" | "nether" | "end") => {
                         filter.insert("dim", right).unwrap();
+                    }
+                    "tags" => {
+                        filter.insert("tags", doc! { "$all": right.split(',').map(|s| s.trim()).filter(|s| !s.is_empty()).collect::<Vec<_>>()});
                     }
                     _ => return false,
                 }

@@ -21,7 +21,7 @@ pub struct Category {
     pub subcategories: HashMap<String, Subcategory>,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Subcategory {
     pub id: i64,
     pub name: String,

@@ -166,7 +166,12 @@ async fn addsub(name: &str, desc: &str, ctx: &Context, msg: &Message) {
         return;
     }
 
-    let subcog = Subcategory::new(name.to_string(), sub.to_string(), desc.to_string(), cog.id);
+    let subcog = Subcategory::new(
+        name.to_string(),
+        sub.to_string(),
+        desc.to_string(),
+        cog.subcogcounter,
+    );
 
     cog.subcategories
         .insert(cog.subcogcounter.to_string(), subcog);

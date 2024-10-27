@@ -2,7 +2,6 @@ use mongodb::bson::doc;
 use serenity::{
     all::{Context, Message},
     async_trait,
-    futures::StreamExt,
 };
 
 use crate::{sys::Command, Clearance, CollectionItem, PerCommandConfig};
@@ -88,54 +87,24 @@ impl Command for CmdCogRm {
                     return true;
                 }
 
-                let mut entries = unsafe { COORDS.get() }
+                if unsafe { COORDS.get() }
                     .unwrap()
-                    .find(doc! { "cog": cogid, "subcog": subcog.id})
+                    .find_one(doc! { "cog": cogid, "subcog": subcog.id})
                     .await
                     .unwrap()
-                    .map(Result::unwrap)
-                    .collect::<Vec<_>>()
-                    .await;
-
-                for entry in entries.iter_mut() {
-                    entry.subcog = 0;
-                    entry
-                        .save_replace(unsafe { COORDS.get() }.unwrap())
-                        .await
-                        .unwrap();
+                    .is_some()
+                {
+                    let _ = msg
+                        .reply(ctx, "You cannot delete a nonempty category.")
+                        .await;
+                    return true;
                 }
 
                 cog.save_replace(unsafe { CATEGORIES.get() }.unwrap())
                     .await
                     .unwrap();
 
-                let _ = msg
-                    .reply(
-                        ctx,
-                        format!(
-                            "Category deleted{}.",
-                            if entries.is_empty() {
-                                String::new()
-                            } else {
-                                format!(
-                                    ", {} {} been moved to {}.unspecified{}",
-                                    entries.len(),
-                                    if entries.len() == 1 {
-                                        "entry has"
-                                    } else {
-                                        "entries have"
-                                    },
-                                    cog.display_name,
-                                    if cog.name != cog.display_name {
-                                        format!(" ({}.unspecified)", cog.name)
-                                    } else {
-                                        String::new()
-                                    }
-                                )
-                            }
-                        ),
-                    )
-                    .await;
+                let _ = msg.reply(ctx, "Category deleted.").await;
 
                 return true;
             }
@@ -162,48 +131,24 @@ impl Command for CmdCogRm {
             return true;
         }
 
-        let mut entries = unsafe { COORDS.get() }
+        if unsafe { COORDS.get() }
             .unwrap()
-            .find(doc! { "cog": cog.id})
+            .find_one(doc! { "cog": cog.id})
             .await
             .unwrap()
-            .map(Result::unwrap)
-            .collect::<Vec<_>>()
-            .await;
-
-        for entry in entries.iter_mut() {
-            entry.subcog = 0;
-            entry
-                .save_replace(unsafe { COORDS.get() }.unwrap())
-                .await
-                .unwrap();
+            .is_some()
+        {
+            let _ = msg
+                .reply(ctx, "You cannot delete a nonempty category.")
+                .await;
+            return true;
         }
 
         cog.save_replace(unsafe { CATEGORIES.get() }.unwrap())
             .await
             .unwrap();
 
-        let _ = msg
-            .reply(
-                ctx,
-                format!(
-                    "Category deleted{}.",
-                    if entries.is_empty() {
-                        String::new()
-                    } else {
-                        format!(
-                            ", {} {} been moved to generic.unspecified",
-                            entries.len(),
-                            if entries.len() == 1 {
-                                "entry has"
-                            } else {
-                                "entries have"
-                            }
-                        )
-                    }
-                ),
-            )
-            .await;
+        let _ = msg.reply(ctx, "Category deleted.").await;
 
         unsafe { CATEGORIES.get() }
             .unwrap()

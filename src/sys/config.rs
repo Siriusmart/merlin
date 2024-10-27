@@ -1,5 +1,6 @@
 use std::{
     collections::HashMap,
+    env,
     fs::{self, OpenOptions},
     hash::{DefaultHasher, Hash, Hasher},
     io::Write,
@@ -18,10 +19,14 @@ pub trait Config: Serialize + DeserializeOwned + Default + Hash {
     const NOTE: &'static str = "";
 
     fn path() -> PathBuf {
-        dirs::config_dir()
-            .unwrap()
-            .join(env!("CARGO_PKG_NAME"))
-            .join(format!("{}.jsonc", Self::NAME))
+        if let Ok(config) = env::var("CONFIG") {
+            PathBuf::from(config)
+        } else {
+            dirs::config_dir()
+                .unwrap()
+                .join(env!("CARGO_PKG_NAME"))
+                .join(format!("{}.jsonc", Self::NAME))
+        }
     }
 
     fn smart_save(&self) {

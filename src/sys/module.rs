@@ -19,7 +19,7 @@ pub trait Module: Sync + Send + 'static {
 
     async fn run(&self, args: &[&str], ctx: &Context, msg: &Message) {
         if !args.is_empty() {
-            if let Some(cmd) = self.commands().get(args[0]) {
+            if let Some(cmd) = self.commands().get(args[0].to_lowercase().as_str()) {
                 let permod = MasterSwitch::get(self.name()).unwrap();
 
                 if !permod.is_allowed(ctx, msg).await
