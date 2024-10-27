@@ -1,6 +1,9 @@
 # Known issues
 
-This acts as an issue tracker so I can keep track of what needs to be done first.
+Currently none.
 
-- Role based permissions not working outside the server
-- Coord entries should check for nearby entries when being edited, and disallow bulk edit to a new location.
+If you encounter an issue, do the following:
+1. Disable the problematic module with `.switch [module] disable`.
+2. Write to config file so changes will persist over restarts with `.save`.
+3. Reload config files so that the problematic is completely taken offline with `.reload`.
+4. DM @siriusmart on Discord and get the issue fixed.

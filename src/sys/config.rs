@@ -22,11 +22,9 @@ pub trait Config: Serialize + DeserializeOwned + Default + Hash {
         if let Ok(config) = env::var("CONFIG") {
             PathBuf::from(config)
         } else {
-            dirs::config_dir()
-                .unwrap()
-                .join(env!("CARGO_PKG_NAME"))
-                .join(format!("{}.jsonc", Self::NAME))
+            dirs::config_dir().unwrap().join(env!("CARGO_PKG_NAME"))
         }
+        .join(format!("{}.jsonc", Self::NAME))
     }
 
     fn smart_save(&self) {

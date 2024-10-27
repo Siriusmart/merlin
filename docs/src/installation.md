@@ -12,6 +12,11 @@ cargo install --git https://github.com/siriusmart/merlin
 
 The installed binary can be found in `~/.cargo/bin/`.
 
+You may use the `CONFIG=/path/to/config/folder` environment variable to specify a config folder, `~` is not supported. By default config files are generated at
+- `~/.config/merlin` (Linux)
+- `/Users/[user]/Library/Application Support/merlin` (MacOS)
+- `C:\Users\[user]\AppData\Roaming` (Windows).
+
 > Merlin does not auto update, for updates you will have to watch the repository.
 
 ## Features

@@ -161,9 +161,9 @@ impl Command for CmdCoordRm {
             .reply(
                 ctx,
                 format!(
-                    "{} entrie{} removed.",
+                    "{} {} removed.",
                     entries.len(),
-                    if entries.len() > 1 { "s" } else { "" }
+                    if entries.len() > 1 { "entries" } else { "entry" }
                 ),
             )
             .await;
