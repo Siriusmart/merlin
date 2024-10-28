@@ -6,7 +6,7 @@ Search for entries.
 
 ### Search for a single entry
 
-Search for an entry using its unique name.
+Search for an entry using its name.
 
 ```sh
 .find big-base
@@ -16,7 +16,7 @@ This command only succeed if there is a visible entry with name `big-base`.
 
 ### Search for a category
 
-Search of a category using its unique name.
+List entries in a category.
 
 ```sh
 .find category

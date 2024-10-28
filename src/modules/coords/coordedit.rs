@@ -37,19 +37,21 @@ impl Command for CmdCoordEdit {
 
     async fn run(&self, mut args: &[&str], ctx: &Context, msg: &Message) -> bool {
         let mut filter = Document::new();
+        let mut name = None;
 
-        if let Some(name) = args.first() {
-            if let Some((_cog, cog_id, subcog_id)) = Category::cogs_from_name(name).await {
+        if let Some(first) = args.first() {
+            if let Some((_cog, cog_id, subcog_id)) = Category::cogs_from_name(first).await {
                 filter.insert("cog", cog_id);
                 if let Some(subcog) = subcog_id {
                     filter.insert("subcog", subcog);
                 }
-            } else if *name != "*" && !name.contains('=') {
-                let name = name.replace(' ', "-").to_lowercase();
-                filter.insert("name", name);
+            } else if *first != "*" && !first.contains('=') {
+                let formatted_name = first.replace(' ', "-").to_lowercase();
+                filter.insert("name", doc! { "$regex": &formatted_name });
+                name = Some(formatted_name);
             }
 
-            if !name.contains('=') {
+            if !first.contains('=') {
                 args = &args[1..]
             }
         } else {
@@ -165,6 +167,11 @@ impl Command for CmdCoordEdit {
                 if (x - entry.x).pow(2) + z.pow(2) > r2 {
                     continue;
                 }
+            }
+
+            if Some(&entry.name) == name.as_ref() {
+                entries = vec![entry];
+                break;
             }
 
             entries.push(entry);

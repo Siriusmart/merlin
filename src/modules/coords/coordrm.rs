@@ -33,19 +33,21 @@ impl Command for CmdCoordRm {
 
     async fn run(&self, mut args: &[&str], ctx: &Context, msg: &Message) -> bool {
         let mut filter = Document::new();
+        let mut name = None;
 
-        if let Some(name) = args.first() {
-            if let Some((_cog, cog_id, subcog_id)) = Category::cogs_from_name(name).await {
+        if let Some(first) = args.first() {
+            if let Some((_cog, cog_id, subcog_id)) = Category::cogs_from_name(first).await {
                 filter.insert("cog", cog_id);
                 if let Some(subcog) = subcog_id {
                     filter.insert("subcog", subcog);
                 }
-            } else if *name != "*" && !name.contains('=') {
-                let name = name.replace(' ', "-").to_lowercase();
-                filter.insert("name", name);
+            } else if *first != "*" && !first.contains('=') {
+                let formatted_name = first.replace(' ', "-").to_lowercase();
+                filter.insert("name", doc! { "$regex": &formatted_name });
+                name = Some(formatted_name);
             }
 
-            if !name.contains('=') {
+            if !first.contains('=') {
                 args = &args[1..]
             }
         } else {
@@ -120,15 +122,10 @@ impl Command for CmdCoordRm {
 
         let mut cursor = unsafe { COORDS.get() }.unwrap().find(filter).await.unwrap();
 
-        let to_skip =
-            page.unwrap_or(0).saturating_sub(1) * unsafe { COORDS_CONFIG.get() }.unwrap().page_size;
-        let mut skipped: u32 = 0;
-
         // allowed, display_name, name
         let mut clearance_lookup: HashMap<(i64, i64), (bool, String, String)> = HashMap::new();
 
-        let mut entries =
-            Vec::with_capacity(unsafe { COORDS_CONFIG.get() }.unwrap().page_size as usize);
+        let mut entries = Vec::new();
 
         while let Some(entry) = cursor.next().await {
             let entry = entry.unwrap();
@@ -143,16 +140,12 @@ impl Command for CmdCoordRm {
                 }
             }
 
-            if skipped < to_skip {
-                skipped += 1;
-                continue;
+            if Some(&entry.name) == name.as_ref() {
+                entries = vec![entry];
+                break;
             }
 
             entries.push(entry);
-
-            if entries.len() == unsafe { COORDS_CONFIG.get() }.unwrap().page_size as usize {
-                break;
-            }
         }
 
         for entry in entries.iter() {

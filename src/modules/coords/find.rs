@@ -34,19 +34,21 @@ impl Command for CmdFind {
 
     async fn run(&self, mut args: &[&str], ctx: &Context, msg: &Message) -> bool {
         let mut filter = Document::new();
+        let mut name = None;
 
-        if let Some(name) = args.first() {
-            if let Some((_cog, cog_id, subcog_id)) = Category::cogs_from_name(name).await {
+        if let Some(first) = args.first() {
+            if let Some((_cog, cog_id, subcog_id)) = Category::cogs_from_name(first).await {
                 filter.insert("cog", cog_id);
                 if let Some(subcog) = subcog_id {
                     filter.insert("subcog", subcog);
                 }
-            } else if *name != "*" && !name.contains('=') {
-                let name = name.replace(' ', "-").to_lowercase();
-                filter.insert("name", name);
+            } else if *first != "*" && !first.contains('=') {
+                let formatted_name = first.replace(' ', "-").to_lowercase();
+                filter.insert("name", doc! { "$regex": &formatted_name });
+                name = Some(formatted_name);
             }
 
-            if !name.contains('=') {
+            if !first.contains('=') {
                 args = &args[1..]
             }
         } else {
@@ -126,14 +128,13 @@ impl Command for CmdFind {
             .await
             .unwrap();
 
-        let to_skip =
-            page.unwrap_or(0).saturating_sub(1) * unsafe { COORDS_CONFIG.get() }.unwrap().page_size;
-        let mut skipped: u32 = 0;
+        let page_size = unsafe { COORDS_CONFIG.get() }.unwrap().page_size;
+        let to_skip = page.unwrap_or(0).saturating_sub(1) * page_size;
 
         // allowed, display_name, name
         let mut clearance_lookup: HashMap<(i64, i64), (bool, String, String)> = HashMap::new();
 
-        let mut entries =
+        let mut entries_owned =
             Vec::with_capacity(unsafe { COORDS_CONFIG.get() }.unwrap().page_size as usize);
 
         while let Some(entry) = cursor.next().await {
@@ -149,17 +150,23 @@ impl Command for CmdFind {
                 }
             }
 
-            if skipped < to_skip {
-                skipped += 1;
-                continue;
-            }
-
-            entries.push(entry);
-
-            if entries.len() == unsafe { COORDS_CONFIG.get() }.unwrap().page_size as usize {
+            if Some(&entry.name) == name.as_ref() {
+                entries_owned = vec![entry];
                 break;
             }
+
+            entries_owned.push(entry);
         }
+
+        let entries = if entries_owned.len() > page_size as usize {
+            if to_skip + page_size > entries_owned.len() as u32 {
+                &entries_owned[entries_owned.len() - page_size as usize..]
+            } else {
+                &entries_owned[to_skip as usize..(to_skip + page_size) as usize]
+            }
+        } else {
+            &entries_owned
+        };
 
         let has_next_page = cursor.next().await.is_some();
 
@@ -244,7 +251,7 @@ impl Command for CmdFind {
                             if has_next_page {
                                 "\n*(continued next page)*"
                             } else {
-                                ""
+                                "\n*(there are no more results)*"
                             }
                         ),
                     )
