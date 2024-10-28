@@ -31,6 +31,7 @@ impl Command for CmdCoordEdit {
     fn usage(&self) -> &[&str] {
         &[
             "(name|*) (cog=value|near=x,z,radius|dim=ow/nether/end...|tags=tag1,tag2...) (newname=value|newdesc=value|newcog=value|newpos=x,z|newdim=ow/nether/end...|newtags=tag1,tag2...)",
+            "(category) (near=x,z,radius|dim=ow/nether/end...|tags=tag1,tag2...) (newname=value|newdesc=value|newcog=value|newpos=x,z|newdim=ow/nether/end...|newtags=tag1,tag2...)",
         ]
     }
 
@@ -38,7 +39,12 @@ impl Command for CmdCoordEdit {
         let mut filter = Document::new();
 
         if let Some(name) = args.first() {
-            if *name != "*" && !name.contains('=') {
+            if let Some((_cog, cog_id, subcog_id)) = Category::cogs_from_name(name).await {
+                filter.insert("cog", cog_id);
+                if let Some(subcog) = subcog_id {
+                    filter.insert("subcog", subcog);
+                }
+            } else if *name != "*" && !name.contains('=') {
                 let name = name.replace(' ', "-").to_lowercase();
                 filter.insert("name", name);
             }
@@ -107,6 +113,7 @@ impl Command for CmdCoordEdit {
                     "newdim" if matches!(right, "ow" | "nether" | "end") => {
                         newdim = Some(Dimension::from_str(right).unwrap())
                     }
+                    "newtags" if right.is_empty() => newtags = Some(Vec::new()),
                     "newtags" => {
                         newtags = Some(
                             right

@@ -47,8 +47,8 @@ Here's a list of all conditions
 |`&server_id:role_id`|The user has the specified role of the ID.|
 |`#channel_name`|The command is ran in a channel with the specified name.|
 |`#channel_id`|The command is ran in a channel with the specified channel ID.|
-|~~`%server_name`~~|WIP|
-|~~`%server_id`~~|WIP|
+|`%server_name`|The command is ran in a server with the specified name.|
+|`%server_id`|The command is ran in a server with the specified ID.|
 
 > Adding a role permissions in a server will automatically prepend it the rule with the server ID.
 

@@ -2,7 +2,9 @@
 
 Search for entries.
 
-## Search for a single entry
+## Simple search
+
+### Search for a single entry
 
 Search for an entry using its unique name.
 
@@ -11,6 +13,17 @@ Search for an entry using its unique name.
 ```
 
 This command only succeed if there is a visible entry with name `big-base`.
+
+### Search for a category
+
+Search of a category using its unique name.
+
+```sh
+.find category
+.find category.subcategory
+```
+
+This command only succeed if the specified category exists.
 
 ## Filters
 

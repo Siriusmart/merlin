@@ -13,7 +13,7 @@ Calls the `ping` command in the `core` module.
 
 ## The help command
 
-The help command is an internal command (does not belong to any module, cannot be disabled) to disable information about a module or command.
+The help command is an internal command (does not belong to any module, cannot be disabled) to display information about a module or command.
 
 ### Module
 
