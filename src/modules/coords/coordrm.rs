@@ -129,7 +129,7 @@ impl Command for CmdCoordRm {
             }
 
             if let Some((x, z, r2)) = near {
-                if (x - entry.x).pow(2) + z.pow(2) > r2 {
+                if (x - entry.x).pow(2) + (z - entry.z).pow(2) > r2 {
                     continue;
                 }
             }

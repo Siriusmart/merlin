@@ -4,7 +4,7 @@ language = "en"
 multilingual = false
 src = "src"
 title = "Basehunter Sero and the Twelve Dupe Stashes"
-description = "Basehunter Sero and the Twelve Dupe Stashes is a legendary tale centered around Basehunter Sero, the mythical discoverer of bases, and his secretive list of dupe stashes known as the Dupe Stashes of the Round Table. The story encompasses themes of chivalry, loyalty, and adventure."
+description = "Basehunter Sero and the Twelve Dupe Stashes is a legendary tale centred around Basehunter Sero, the mythical discoverer of bases, and his secretive list of dupe stashes known as the Dupe Stashes of the Round Table. The story encompasses themes of chivalry, loyalty, and adventure."
 
 [output.html]
 default-theme = "ayu"
