@@ -39,3 +39,4 @@
 - [Module]()
     - [Module lifecycle]()
 - [Known issues](./issues.md)
+- [Changelog](./changelog.md)

@@ -9,7 +9,7 @@ use serenity::{
 
 use crate::{sys::Command, PerCommandConfig};
 
-use super::{category::Category, collection::COORDS, config::COORDS_CONFIG};
+use super::{category::Category, collection::COORDS};
 
 pub struct CmdCoordRm;
 
@@ -25,8 +25,8 @@ impl Command for CmdCoordRm {
 
     fn usage(&self) -> &[&str] {
         &[
-            "(name) (cog=value|page=value|near=x,z,radius|dim=ow/nether/end|tags=tag1,tag2..)",
-            "(category) (page=value|near=x,z,radius|dim=ow/nether/end|tags=tag1,tag2..)",
+            "(name|regex) (cog=value|page=value|desc=regex|near=x,z,radius|dim=ow/nether/end|tags=tag1,tag2..)",
+            "(category) (page=value|desc=regex|near=x,z,radius|dim=ow/nether/end|tags=tag1,tag2..)",
             "*",
         ]
     }
@@ -54,7 +54,6 @@ impl Command for CmdCoordRm {
             return false;
         }
 
-        let mut page: Option<u32> = None;
         let mut near: Option<(i64, i64, i64)> = None;
 
         for arg in args.iter() {
@@ -74,13 +73,8 @@ impl Command for CmdCoordRm {
                             filter.insert("subcog", subcog);
                         }
                     }
-                    "page" => {
-                        if let Ok(parsed) = right.parse() {
-                            page = Some(parsed);
-                        } else {
-                            let _ = msg.reply(ctx, "Could not parse page number.").await;
-                            return true;
-                        }
+                    "desc" => {
+                        filter.insert("description", doc! { "$regex": right });
                     }
                     "near" => {
                         let args = right.splitn(3, ',').collect::<Vec<_>>();

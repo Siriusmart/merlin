@@ -23,6 +23,15 @@ List entries in a category.
 .find category.subcategory
 ```
 
+### Regex search
+
+If you only remember parts of the name or description, you can always use regex search on the `name` and `description` field.
+
+```sh
+.find he # will match `he who must not be named`
+.find hello desc='metro' # will match whatever description string containing `metro`
+```
+
 This command only succeed if the specified category exists.
 
 ## Filters

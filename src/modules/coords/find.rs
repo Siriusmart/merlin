@@ -26,8 +26,8 @@ impl Command for CmdFind {
 
     fn usage(&self) -> &[&str] {
         &[
-            "(name) (cog=value|page=value|near=x,z,radius|dim=ow/nether/end|tags=tag1,tag2..)",
-            "(category) (page=value|near=x,z,radius|dim=ow/nether/end|tags=tag1,tag2..)",
+            "(name|regex) (cog=value|page=value|desc=regex|near=x,z,radius|dim=ow/nether/end|tags=tag1,tag2..)",
+            "(category) (page=value|desc=regex|near=x,z,radius|dim=ow/nether/end|tags=tag1,tag2..)",
             "*",
         ]
     }
@@ -74,6 +74,9 @@ impl Command for CmdFind {
                         if let Some(subcog) = subcog_id {
                             filter.insert("subcog", subcog);
                         }
+                    }
+                    "desc" => {
+                        filter.insert("description", doc! { "$regex": right });
                     }
                     "page" => {
                         if let Ok(parsed) = right.parse() {

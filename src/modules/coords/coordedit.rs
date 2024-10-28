@@ -30,8 +30,8 @@ impl Command for CmdCoordEdit {
 
     fn usage(&self) -> &[&str] {
         &[
-            "(name|*) (cog=value|near=x,z,radius|dim=ow/nether/end...|tags=tag1,tag2...) (newname=value|newdesc=value|newcog=value|newpos=x,z|newdim=ow/nether/end...|newtags=tag1,tag2...)",
-            "(category) (near=x,z,radius|dim=ow/nether/end...|tags=tag1,tag2...) (newname=value|newdesc=value|newcog=value|newpos=x,z|newdim=ow/nether/end...|newtags=tag1,tag2...)",
+            "(name|regex|*) (cog=value|desc=regex|near=x,z,radius|dim=ow/nether/end...|tags=tag1,tag2...) (newname=value|newdesc=value|newcog=value|newpos=x,z|newdim=ow/nether/end...|newtags=tag1,tag2...)",
+            "(category) (desc=regex|near=x,z,radius|dim=ow/nether/end...|tags=tag1,tag2...) (newname=value|newdesc=value|newcog=value|newpos=x,z|newdim=ow/nether/end...|newtags=tag1,tag2...)",
         ]
     }
 
@@ -83,6 +83,9 @@ impl Command for CmdCoordEdit {
                         if let Some(subcog) = subcog_id {
                             filter.insert("subcog", subcog);
                         }
+                    }
+                    "desc" => {
+                        filter.insert("description", doc! { "$regex": right });
                     }
                     "near" => {
                         let args = right.splitn(3, ',').collect::<Vec<_>>();
