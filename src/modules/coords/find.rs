@@ -171,7 +171,7 @@ impl Command for CmdFind {
             &entries_owned
         };
 
-        let has_next_page = cursor.next().await.is_some();
+        let has_next_page = entries.len() as u32 > to_skip + page_size;
 
         match entries.len() {
             0 => {
