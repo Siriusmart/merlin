@@ -161,24 +161,30 @@ impl Command for CmdFind {
             entries_owned.push(entry);
         }
 
-        let entries = if entries_owned.len() > page_size as usize {
+        let entries_owned = entries_owned.into_iter().enumerate().collect::<Vec<_>>();
+
+        let (has_next_page, entries) = if entries_owned.len() > page_size as usize {
             if to_skip + page_size > entries_owned.len() as u32 {
-                &entries_owned[entries_owned.len() - page_size as usize..]
+                (
+                    false,
+                    &entries_owned[entries_owned.len() - page_size as usize..],
+                )
             } else {
-                &entries_owned[to_skip as usize..(to_skip + page_size) as usize]
+                (
+                    true,
+                    &entries_owned[to_skip as usize..(to_skip + page_size) as usize],
+                )
             }
         } else {
-            &entries_owned
+            (false, entries_owned.as_slice())
         };
-
-        let has_next_page = entries.len() as u32 > to_skip + page_size;
 
         match entries.len() {
             0 => {
                 let _ = msg.reply(ctx, "No maching results found.").await;
             }
             1 => {
-                let entry = &entries[0];
+                let (_, entry) = &entries[0];
                 let (_, display, name) = clearance_lookup.get(&(entry.cog, entry.subcog)).unwrap();
                 let _ = msg
                     .reply(
@@ -221,14 +227,15 @@ impl Command for CmdFind {
                         format!(
                             "Showing {} results.{}{}",
                             entries.len(),
-                            entries.iter().zip(to_skip + 1..).fold(
-                                String::new(),
-                                |mut current, (entry, no)| {
+                            entries
+                                .iter()
+                                .fold(String::new(), |mut current, (no, entry)| {
                                     let (_, display, name) =
                                         clearance_lookup.get(&(entry.cog, entry.subcog)).unwrap();
                                     write!(
                                         current,
-                                        "\n{no}. **{}**{} in {}{}{}",
+                                        "\n{}. **{}**{} in {}{}{}",
+                                        no + 1,
                                         entry.display_name,
                                         if entry.display_name != entry.name {
                                             format!(" ({})", entry.name)
@@ -249,8 +256,7 @@ impl Command for CmdFind {
                                     )
                                     .unwrap();
                                     current
-                                }
-                            ),
+                                }),
                             if has_next_page {
                                 "\n*(continued next page)*"
                             } else {
