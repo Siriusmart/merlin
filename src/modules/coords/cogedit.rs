@@ -5,7 +5,7 @@ use serenity::{
 
 use crate::{sys::Command, Clearance, CollectionItem, PerCommandConfig};
 
-use super::{category::Category, collection::CATEGORIES};
+use super::{category::Category, collection::CATEGORIES, config::COORDS_CONFIG};
 
 pub struct CmdCogEdit;
 
@@ -20,7 +20,7 @@ impl Command for CmdCogEdit {
     }
 
     fn usage(&self) -> &[&str] {
-        &["[category] [desc=value|name=value...]"]
+        &["[category] [desc=value|name=value|path=value...]"]
     }
 
     async fn run(&self, args: &[&str], ctx: &Context, msg: &Message) -> bool {
@@ -43,6 +43,7 @@ impl Command for CmdCogEdit {
         let mut new_desc = None;
         let mut new_name = None;
         let mut new_display = None;
+        let mut new_path = None;
 
         for arg in args[1..].iter() {
             if let Some((left, right)) = arg.split_once('=') {
@@ -64,11 +65,19 @@ impl Command for CmdCogEdit {
                         new_name = Some(name);
                         new_display = Some(right);
                     }
+                    "path" => new_path = Some(right),
                     _ => return false,
                 }
             } else {
                 return false;
             }
+        }
+
+        if new_path.is_none() && new_name.is_none() && new_desc.is_none() {
+            let _ = msg
+                .reply(ctx, "Update failed because no fields are changed.")
+                .await;
+            return true;
         }
 
         let mut cog = if let Some(cog) = Category::get(main).await {
@@ -78,8 +87,7 @@ impl Command for CmdCogEdit {
             return true;
         };
 
-        let cog_display = cog.display_name.clone();
-        let cog_name = cog.name.clone();
+        let cog2 = cog.clone();
 
         if let Some(sub) = sub {
             let name = sub.replace(' ', "-").to_lowercase();
@@ -100,10 +108,12 @@ impl Command for CmdCogEdit {
                             ctx,
                             format!(
                                 "You don't have permission to edit **{}.{}**{}.",
-                                cog_display,
+                                cog2.display_name,
                                 subcog.display_name,
-                                if cog_name != cog_display || subcog.display_name != subcog.name {
-                                    format!(" ({}.{})", cog_name, subcog.name)
+                                if cog2.name != cog2.display_name
+                                    || subcog.display_name != subcog.name
+                                {
+                                    format!(" ({}.{})", cog2.name, subcog.name)
                                 } else {
                                     String::new()
                                 }
@@ -132,6 +142,36 @@ impl Command for CmdCogEdit {
                     subcog.description = desc.to_string();
                 }
 
+                if let Some(path) = new_path {
+                    let to = if path.is_empty() {
+                        None
+                    } else {
+                        Some(path.to_string())
+                    };
+
+                    Category::move_all(
+                        &cog2,
+                        Some(subcog.id),
+                        subcog.attachment_path.as_ref().unwrap_or(
+                            cog2.attachment_path.as_ref().unwrap_or(
+                                &unsafe { COORDS_CONFIG.get() }
+                                    .unwrap()
+                                    .default_attachment_path,
+                            ),
+                        ),
+                        to.as_ref().unwrap_or(
+                            cog2.attachment_path.as_ref().unwrap_or(
+                                &unsafe { COORDS_CONFIG.get() }
+                                    .unwrap()
+                                    .default_attachment_path,
+                            ),
+                        ),
+                    )
+                    .await;
+
+                    subcog.attachment_path = to;
+                }
+
                 cog.save_replace(unsafe { CATEGORIES.get() }.unwrap())
                     .await
                     .unwrap();
@@ -151,11 +191,11 @@ impl Command for CmdCogEdit {
                     ctx,
                     format!(
                         "You don't have permission to edit **{}**{}.",
-                        cog_display,
-                        if cog_display == cog_name {
+                        cog2.display_name,
+                        if cog2.display_name == cog2.name {
                             String::new()
                         } else {
-                            format!(" ({cog_name})")
+                            format!(" ({})", cog2.name)
                         },
                     ),
                 )
@@ -186,6 +226,32 @@ impl Command for CmdCogEdit {
 
         if let Some(desc) = new_desc {
             cog.description = desc.to_string();
+        }
+
+        if let Some(path) = new_path {
+            let to = if path.is_empty() {
+                None
+            } else {
+                Some(path.to_string())
+            };
+
+            Category::move_all(
+                &cog2,
+                None,
+                cog.attachment_path.as_ref().unwrap_or(
+                    &unsafe { COORDS_CONFIG.get() }
+                        .unwrap()
+                        .default_attachment_path,
+                ),
+                to.as_ref().unwrap_or(
+                    &unsafe { COORDS_CONFIG.get() }
+                        .unwrap()
+                        .default_attachment_path,
+                ),
+            )
+            .await;
+
+            cog.attachment_path = to;
         }
 
         cog.save_replace(unsafe { CATEGORIES.get() }.unwrap())

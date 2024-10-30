@@ -97,6 +97,10 @@ impl Coord {
             return Err("name contains illegal characters");
         }
 
+        if name.parse::<i64>().is_ok() {
+            return Err("name cannot be an integer");
+        }
+
         let coords = unsafe { COORDS.get() }.unwrap();
 
         if coords

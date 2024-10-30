@@ -26,6 +26,7 @@ impl Command for CmdFind {
 
     fn usage(&self) -> &[&str] {
         &[
+            "[id]",
             "(name|regex) (cog=value|page=value|desc=regex|near=x,z,radius|dim=ow/nether/end|tags=tag1,tag2..)",
             "(category) (page=value|desc=regex|near=x,z,radius|dim=ow/nether/end|tags=tag1,tag2..)",
             "*",
@@ -43,9 +44,13 @@ impl Command for CmdFind {
                     filter.insert("subcog", subcog);
                 }
             } else if *first != "*" && !first.contains('=') {
-                let formatted_name = first.replace(' ', "-").to_lowercase();
-                filter.insert("name", doc! { "$regex": &formatted_name });
-                name = Some(formatted_name);
+                if let Ok(id) = first.parse::<i64>() {
+                    filter.insert("_id", id);
+                } else {
+                    let formatted_name = first.replace(' ', "-").to_lowercase();
+                    filter.insert("name", doc! { "$regex": &formatted_name });
+                    name = Some(formatted_name);
+                }
             }
 
             if !first.contains('=') {
@@ -190,7 +195,7 @@ impl Command for CmdFind {
                     .reply(
                         ctx,
                         format!(
-                            "**[{}{}] {}**\n{}\n{}\n\nx={} z={} in the {}{}",
+                            "**[{}{}] {}**\n{}: {}\n{}\n\nx={} z={} in the {}{}",
                             display,
                             if display != name {
                                 format!(" **({name})**")
@@ -198,6 +203,7 @@ impl Command for CmdFind {
                                 String::new()
                             },
                             entry.display_name,
+                            entry.id,
                             if entry.description.is_empty() {
                                 "This entry has no description."
                             } else {

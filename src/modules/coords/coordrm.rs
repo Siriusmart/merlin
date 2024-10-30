@@ -42,9 +42,13 @@ impl Command for CmdCoordRm {
                     filter.insert("subcog", subcog);
                 }
             } else if *first != "*" && !first.contains('=') {
-                let formatted_name = first.replace(' ', "-").to_lowercase();
-                filter.insert("name", doc! { "$regex": &formatted_name });
-                name = Some(formatted_name);
+                if let Ok(id) = first.parse::<i64>() {
+                    filter.insert("_id", id);
+                } else {
+                    let formatted_name = first.replace(' ', "-").to_lowercase();
+                    filter.insert("name", doc! { "$regex": &formatted_name });
+                    name = Some(formatted_name);
+                }
             }
 
             if !first.contains('=') {

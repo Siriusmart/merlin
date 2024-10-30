@@ -24,19 +24,25 @@ impl Command for CmdCogAdd {
 
     fn usage(&self) -> &[&str] {
         &[
-            "[category] (description)",
-            "[category].[subcategory] (description)",
+            "[category] (description) (attachment path)",
+            "[category].[subcategory] (description) (attachment path)",
         ]
     }
 
     async fn run(&self, args: &[&str], ctx: &Context, msg: &Message) -> bool {
         match args {
-            [name] if !name.contains('.') => addmain(name, "", ctx, msg).await,
+            [name] if !name.contains('.') => addmain(name, "", None, ctx, msg).await,
             [name, description] if !name.contains('.') => {
-                addmain(name, description, ctx, msg).await
+                addmain(name, description, None, ctx, msg).await
             }
-            [name] => addsub(name, "", ctx, msg).await,
-            [name, description] => addsub(name, description, ctx, msg).await,
+            [name, description, path] if !name.contains('.') => {
+                addmain(name, description, Some(path.to_string()), ctx, msg).await
+            }
+            [name] => addsub(name, "", None, ctx, msg).await,
+            [name, description] => addsub(name, description, None, ctx, msg).await,
+            [name, description, path] => {
+                addsub(name, description, Some(path.to_string()), ctx, msg).await
+            }
             _ => return false,
         }
         true
@@ -50,7 +56,7 @@ impl Command for CmdCogAdd {
     }
 }
 
-async fn addmain(name: &str, desc: &str, ctx: &Context, msg: &Message) {
+async fn addmain(name: &str, desc: &str, path: Option<String>, ctx: &Context, msg: &Message) {
     if name.is_empty() {
         let _ = msg.reply(ctx, "Category name cannot be empty.").await;
         return;
@@ -66,7 +72,7 @@ async fn addmain(name: &str, desc: &str, ctx: &Context, msg: &Message) {
         return;
     }
 
-    let cog = Category::new(name.to_string(), desc.to_string()).await;
+    let cog = Category::new(name.to_string(), desc.to_string(), path).await;
 
     match cog {
         Ok(cog) => {
@@ -96,7 +102,7 @@ async fn addmain(name: &str, desc: &str, ctx: &Context, msg: &Message) {
     }
 }
 
-async fn addsub(name: &str, desc: &str, ctx: &Context, msg: &Message) {
+async fn addsub(name: &str, desc: &str, path: Option<String>, ctx: &Context, msg: &Message) {
     let (main, sub) = name.split_once('.').unwrap();
 
     if main.to_lowercase().as_str() == "generic" {
@@ -171,6 +177,7 @@ async fn addsub(name: &str, desc: &str, ctx: &Context, msg: &Message) {
         sub.to_string(),
         desc.to_string(),
         cog.subcogcounter,
+        path,
     );
 
     cog.subcategories

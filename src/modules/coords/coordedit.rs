@@ -6,6 +6,7 @@ use serenity::{
     async_trait,
     futures::StreamExt,
 };
+use tokio::fs;
 
 use crate::{sys::Command, Clearance, CollectionItem, PerCommandConfig};
 
@@ -46,9 +47,13 @@ impl Command for CmdCoordEdit {
                     filter.insert("subcog", subcog);
                 }
             } else if *first != "*" && !first.contains('=') {
-                let formatted_name = first.replace(' ', "-").to_lowercase();
-                filter.insert("name", doc! { "$regex": &formatted_name });
-                name = Some(formatted_name);
+                if let Ok(id) = first.parse::<i64>() {
+                    filter.insert("_id", id);
+                } else {
+                    let formatted_name = first.replace(' ', "-").to_lowercase();
+                    filter.insert("name", doc! { "$regex": &formatted_name });
+                    name = Some(formatted_name);
+                }
             }
 
             if !first.contains('=') {
@@ -157,6 +162,8 @@ impl Command for CmdCoordEdit {
         // allowed, display_name, name
         let mut clearance_lookup: HashMap<(i64, i64), (bool, String, String)> = HashMap::new();
 
+        let newcog_lower = newcog.map(|s| s.to_lowercase());
+
         let mut entries = Vec::new();
 
         while let Some(entry) = cursor.next().await {
@@ -172,16 +179,43 @@ impl Command for CmdCoordEdit {
                 }
             }
 
+            let path = if let Some(cog) = &newcog_lower {
+                let path = Category::path(entry.cog, entry.subcog)
+                    .await
+                    .join(entry.id.to_string());
+                if fs::try_exists(&path).await.unwrap() {
+                    if cog == "generic.private" {
+                        let _ = msg
+                    .reply(ctx, "Update failed because cannot move entry into generic.private when it contains attachments.")
+                    .await;
+                        return true;
+                    }
+
+                    Some(path)
+                } else {
+                    None
+                }
+            } else {
+                None
+            };
+
             if Some(&entry.name) == name.as_ref() {
-                entries = vec![entry];
+                entries = vec![(entry, path)];
                 break;
             }
 
-            entries.push(entry);
+            entries.push((entry, path));
         }
 
         let newname = if let Some(display) = newdisplay {
             let name = display.replace(" ", "-");
+
+            if name.parse::<i64>().is_ok() {
+                let _ = msg
+                    .reply(ctx, "Update failed because name cannot be an integer.")
+                    .await;
+                return true;
+            }
 
             if name.chars().any(|c| !c.is_alphanumeric() && c != '-') {
                 let _ = msg
@@ -328,7 +362,27 @@ impl Command for CmdCoordEdit {
             }
         }
 
-        for entry in entries.iter_mut() {
+        if newcog == Some((0, Some(1)))
+            && !entries
+                .iter()
+                .all(|(entry, _)| entry.author_id == msg.author.id.get())
+        {
+            let _ = msg
+                .reply(
+                    ctx,
+                    "Entries not moved to generic.private because you don't own all the entries.",
+                )
+                .await;
+            return true;
+        }
+
+        let to_dir = if let Some(newcog) = newcog {
+            Some(Category::path(newcog.0, newcog.1.unwrap_or_default()).await)
+        } else {
+            None
+        };
+
+        for (entry, path) in entries.iter_mut() {
             if let Some(name) = &newname {
                 entry.name = name.clone();
                 entry.display_name = newdisplay.unwrap().to_string();
@@ -355,23 +409,15 @@ impl Command for CmdCoordEdit {
             if let Some(tags) = &newtags {
                 entry.tags = tags.clone();
             }
+
+            if let Some(path) = path {
+                fs::rename(path, to_dir.as_ref().unwrap().join(entry.id.to_string()))
+                    .await
+                    .unwrap();
+            }
         }
 
-        if newcog == Some((0, Some(1)))
-            && !entries
-                .iter()
-                .all(|entry| entry.author_id == msg.author.id.get())
-        {
-            let _ = msg
-                .reply(
-                    ctx,
-                    "Entries not moved to generic.private because you don't own all the entries.",
-                )
-                .await;
-            return true;
-        }
-
-        for entry in entries.iter() {
+        for (entry, _) in entries.iter() {
             entry
                 .save_replace(unsafe { COORDS.get() }.unwrap())
                 .await

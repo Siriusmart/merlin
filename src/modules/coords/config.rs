@@ -17,6 +17,9 @@ pub struct CoordsConfig {
     #[serde_inline_default(5)]
     #[serde(rename = "page-size")]
     pub page_size: u32,
+    #[serde_inline_default("/path/to/dir".to_string())]
+    #[serde(rename = "default-attachment-path")]
+    pub default_attachment_path: String,
 }
 
 impl Config for CoordsConfig {

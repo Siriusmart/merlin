@@ -1,6 +1,6 @@
 [package]
 name = "merlin"
-version = "0.1.2"
+version = "0.1.3"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -15,7 +15,7 @@ serde_default = "0.2.0"
 serde_json = "1.0.128"
 serenity = { version = "0.12.2", features = ["client", "gateway", "model"] }
 shell-words = "1.1.0"
-tokio = { version = "1.39.2", features = ["macros", "rt-multi-thread"] }
+tokio = { version = "1.39.2", features = ["macros", "rt-multi-thread", "fs"] }
 
 mongodb = { version = "3.1.0", optional = true }
 chrono = { version = "0.4.38", features = ["std"], default-features = false }
