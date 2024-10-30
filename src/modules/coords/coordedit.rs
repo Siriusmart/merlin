@@ -31,7 +31,7 @@ impl Command for CmdCoordEdit {
 
     fn usage(&self) -> &[&str] {
         &[
-            "(name|regex|*) (cog=value|desc=regex|near=x,z,radius|dim=ow/nether/end...|tags=tag1,tag2...) (newname=value|newdesc=value|newcog=value|newpos=x,z|newdim=ow/nether/end...|newtags=tag1,tag2...)",
+            "(name|regex|id|*) (cog=value|desc=regex|near=x,z,radius|dim=ow/nether/end...|tags=tag1,tag2...) (newname=value|newdesc=value|newcog=value|newpos=x,z|newdim=ow/nether/end...|newtags=tag1,tag2...)",
             "(category) (desc=regex|near=x,z,radius|dim=ow/nether/end...|tags=tag1,tag2...) (newname=value|newdesc=value|newcog=value|newpos=x,z|newdim=ow/nether/end...|newtags=tag1,tag2...)",
         ]
     }

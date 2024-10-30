@@ -3,6 +3,7 @@ mod collection;
 mod coord;
 mod module;
 
+mod attach;
 mod cog;
 mod cogadd;
 mod cogedit;

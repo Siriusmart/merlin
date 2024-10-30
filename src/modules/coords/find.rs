@@ -26,10 +26,8 @@ impl Command for CmdFind {
 
     fn usage(&self) -> &[&str] {
         &[
-            "[id]",
-            "(name|regex) (cog=value|page=value|desc=regex|near=x,z,radius|dim=ow/nether/end|tags=tag1,tag2..)",
-            "(category) (page=value|desc=regex|near=x,z,radius|dim=ow/nether/end|tags=tag1,tag2..)",
-            "*",
+            "(name|regex|id|*) (cog=value|page=value|desc=regex|near=x,z,radius|dim=ow/nether/end|tags=tag1,tag2..)",
+            "(category) (page=value|desc=regex|near=x,z,radius|dim=ow/nether/end|tags=tag1,tag2..)"
         ]
     }
 
@@ -195,15 +193,15 @@ impl Command for CmdFind {
                     .reply(
                         ctx,
                         format!(
-                            "**[{}{}] {}**\n{}: {}\n{}\n\nx={} z={} in the {}{}",
+                            "**[{}{}] {}: {}**\n{}\n{}\n\nx={} z={} in the {}{}",
                             display,
                             if display != name {
                                 format!(" **({name})**")
                             } else {
                                 String::new()
                             },
-                            entry.display_name,
                             entry.id,
+                            entry.display_name,
                             if entry.description.is_empty() {
                                 "This entry has no description."
                             } else {
@@ -257,7 +255,20 @@ impl Command for CmdFind {
                                         if entry.tags.is_empty() {
                                             String::new()
                                         } else {
-                                            format!(" (tags: {})", entry.tags.join(", "))
+                                            let mut tags = entry.tags.clone();
+                                            let len = tags.len();
+                                            if len > 4 {
+                                                tags.truncate(3);
+                                            }
+                                            format!(
+                                                " (tags: {}{})",
+                                                tags.join(", "),
+                                                if len > 4 {
+                                                    format!("+ {} others", len - 3)
+                                                } else {
+                                                    String::new()
+                                                }
+                                            )
                                         }
                                     )
                                     .unwrap();

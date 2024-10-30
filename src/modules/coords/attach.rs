@@ -1,32 +1,34 @@
 use std::collections::HashMap;
 
+use chrono::{Datelike, Timelike};
 use mongodb::bson::{doc, Document};
 use serenity::{
-    all::{Context, Message},
+    all::{Context, CreateAllowedMentions, EditMessage, Message},
     async_trait,
     futures::StreamExt,
 };
+use tokio::{fs, io::AsyncWriteExt};
 
 use crate::{sys::Command, PerCommandConfig};
 
 use super::{category::Category, collection::COORDS};
 
-pub struct CmdCoordRm;
+pub struct CmdAttach;
 
 #[async_trait]
-impl Command for CmdCoordRm {
+impl Command for CmdAttach {
     fn name(&self) -> &str {
-        "coordrm"
+        "attach"
     }
 
     fn description(&self) -> &str {
-        "Remove coord DB entries."
+        "Attach files to a coord entry."
     }
 
     fn usage(&self) -> &[&str] {
         &[
-            "(name|regex|id|*) (cog=value|page=value|desc=regex|near=x,z,radius|dim=ow/nether/end|tags=tag1,tag2..)",
-            "(category) (page=value|desc=regex|near=x,z,radius|dim=ow/nether/end|tags=tag1,tag2..)"
+            "(name|regex|id|*) (cog=value|page=value|desc=regex|near=x,z,radius|dim=ow/nether/end|tags=tag1,tag2..) [attachments]",
+            "(category) (page=value|desc=regex|near=x,z,radius|dim=ow/nether/end|tags=tag1,tag2..) [attachments]"
         ]
     }
 
@@ -145,26 +147,70 @@ impl Command for CmdCoordRm {
             entries.push(entry);
         }
 
-        for entry in entries.iter() {
-            let _ = unsafe { COORDS.get() }
-                .unwrap()
-                .delete_one(doc! { "_id": entry.id })
-                .await
-                .unwrap();
+        match entries.len() {
+            0 => {
+                let _ = msg.reply(ctx, "No entries found.").await;
+                return true;
+            }
+            1 => {}
+            c => {
+                let _ = msg.reply(ctx, format!("You can only attach a file to a single entry, but there are {c} matching entries.")).await;
+                return true;
+            }
         }
 
-        let _ = msg
-            .reply(
+        let entry = entries.first().unwrap();
+
+        if msg.attachments.is_empty() {
+            return false;
+        }
+
+        let dir_path = Category::path(entry.cog, entry.subcog)
+            .await
+            .join(entry.id.to_string());
+
+        let mut replied = msg.reply(ctx, "Upload has started.").await.unwrap();
+
+        if !fs::try_exists(&dir_path).await.unwrap() {
+            fs::create_dir_all(&dir_path).await.unwrap();
+        }
+
+        for attachment in msg.attachments.iter() {
+            let content = match attachment.download().await {
+                Ok(c) => c,
+                Err(_) => {
+                    let _ = replied
+                        .edit(ctx, EditMessage::new().content("Upload failed."))
+                        .await;
+                    return true;
+                }
+            };
+
+            let username = &msg.author.name;
+            let label = &attachment.filename;
+            let id = attachment.id.get();
+            let year = msg.timestamp.year();
+            let month = msg.timestamp.month();
+            let day = msg.timestamp.day();
+            let hour = msg.timestamp.hour();
+            let min = msg.timestamp.minute();
+            let sec = msg.timestamp.second();
+
+            let mut file = fs::OpenOptions::new()
+                .create(true)
+                .write(true)
+                .truncate(true)
+                .open(dir_path.join(format!("{year}{month:0>2}{day:0>2}-{hour:0>2}{min:0>2}{sec:0>2}_{username}_{id}_{label}"))).await.unwrap();
+
+            file.write_all(&content).await.unwrap();
+        }
+
+        let _ = replied
+            .edit(
                 ctx,
-                format!(
-                    "{} {} removed.",
-                    entries.len(),
-                    if entries.len() > 1 {
-                        "entries"
-                    } else {
-                        "entry"
-                    }
-                ),
+                EditMessage::new()
+                    .content("Upload completed.")
+                    .allowed_mentions(CreateAllowedMentions::new().all_users(false)),
             )
             .await;
 

@@ -8,6 +8,7 @@ use serenity::async_trait;
 use crate::{Command, Module, Mongo};
 
 use super::{
+    attach::CmdAttach,
     cog::CmdCog,
     cogadd::CmdCogAdd,
     cogedit::CmdCogEdit,
@@ -78,6 +79,11 @@ impl ModCoords {
             map.insert(cmd.name().to_string(), cmd);
         }
 
+        {
+            let cmd: Box<dyn Command> = Box::new(CmdAttach);
+            map.insert(cmd.name().to_string(), cmd);
+        }
+
         Self(Arc::new(map))
     }
 }
@@ -122,6 +128,7 @@ impl Module for ModCoords {
             ("find", "coords find"),
             ("coordrm", "coords coordrm"),
             ("cogrm", "coords cogrm"),
+            ("attach", "coords attach"),
         ]
     }
 }
