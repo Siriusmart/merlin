@@ -161,6 +161,16 @@ impl Command for CmdAttach {
 
         let entry = entries.first().unwrap();
 
+        if (entry.cog, entry.subcog) == (0, 1) {
+            let _ = msg
+                .reply(
+                    ctx,
+                    "You cannot attach file to entries in **generic.private**.",
+                )
+                .await;
+            return true;
+        }
+
         if msg.attachments.is_empty() {
             return false;
         }

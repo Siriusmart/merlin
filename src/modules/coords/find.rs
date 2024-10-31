@@ -193,7 +193,7 @@ impl Command for CmdFind {
                     .reply(
                         ctx,
                         format!(
-                            "**[{}{}] {}: {}**\n{}\n{}\n\nx={} z={} in the {}{}",
+                            "**[{}{}] {}: {}**\n{}\n{}\n\nx=||{}|| z=||{}|| in the {}{}",
                             display,
                             if display != name {
                                 format!(" **({name})**")
@@ -264,7 +264,7 @@ impl Command for CmdFind {
                                                 " (tags: {}{})",
                                                 tags.join(", "),
                                                 if len > 4 {
-                                                    format!("+ {} others", len - 3)
+                                                    format!(" + {} others", len - 3)
                                                 } else {
                                                     String::new()
                                                 }

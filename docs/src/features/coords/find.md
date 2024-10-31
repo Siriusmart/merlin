@@ -32,6 +32,14 @@ If you only remember parts of the name or description, you can always use regex 
 .find hello desc='metro' # will match whatever description string containing `metro`
 ```
 
+### Search by ID
+
+Each entry has a permanent unique identifier. If the ID is `123`, then the entry can be found with.
+
+```sh
+.find 123
+```
+
 This command only succeed if the specified category exists.
 
 ## Filters

@@ -9,7 +9,7 @@ use serenity::{
 
 use crate::{sys::Command, Clearance, PerCommandConfig};
 
-use super::{category::Category, collection::CATEGORIES};
+use super::{category::Category, collection::CATEGORIES, config::COORDS_CONFIG};
 
 pub struct CmdCog;
 
@@ -38,27 +38,33 @@ impl Command for CmdCog {
                 let _ = msg
                     .reply(
                         ctx,
-                        format!("**Coords categories**\n\\- generic{}", {
-                            unsafe { CATEGORIES.get() }
+                        format!(
+                            "**Coords categories**\n\\- generic{}\n\nAttachment path: `{}`",
+                            {
+                                unsafe { CATEGORIES.get() }
+                                    .unwrap()
+                                    .find(doc! {})
+                                    .await
+                                    .unwrap()
+                                    .map(|item| item.unwrap())
+                                    .map(|item| {
+                                        format!(
+                                            "\n\\- {}{}",
+                                            item.display_name,
+                                            if item.display_name != item.name {
+                                                format!(" ({})", item.name)
+                                            } else {
+                                                String::new()
+                                            }
+                                        )
+                                    })
+                                    .collect::<String>()
+                                    .await
+                            },
+                            unsafe { COORDS_CONFIG.get() }
                                 .unwrap()
-                                .find(doc! {})
-                                .await
-                                .unwrap()
-                                .map(|item| item.unwrap())
-                                .map(|item| {
-                                    format!(
-                                        "\n\\- {}{}",
-                                        item.display_name,
-                                        if item.display_name != item.name {
-                                            format!(" ({})", item.name)
-                                        } else {
-                                            String::new()
-                                        }
-                                    )
-                                })
-                                .collect::<String>()
-                                .await
-                        }),
+                                .default_attachment_path
+                        ),
                     )
                     .await;
                 return true;
@@ -69,7 +75,7 @@ impl Command for CmdCog {
 
         match (main.to_lowercase().as_str(), sublower.as_str()) {
             ("generic", "") => {
-                let _ = msg.reply(ctx, "**[Coords category] generic**\nSystem categories of special function.\n\n**Subcategories**\n\\- unspecified\n\\- private").await;
+                let _ = msg.reply(ctx, format!("**[Coords category] generic**\nSystem categories of special function.\n\n**Subcategories**\n\\- unspecified\n\\- private\n\nAttachment path: `{}` (inherited)", unsafe { COORDS_CONFIG.get() }.unwrap().default_attachment_path)).await;
                 return true;
             }
             ("generic", "private") => {
@@ -77,7 +83,19 @@ impl Command for CmdCog {
                 return true;
             }
             (main, "unspecified") => {
-                let _ = msg.reply(ctx, format!("**[Coords category] {main}.unspecified**\nThe default subcategory for {main}.")).await;
+                let cog = if let Some(cog) = Category::get(main).await {
+                    cog
+                } else {
+                    let _ = msg.reply(ctx, "Category not found.").await;
+                    return true;
+                };
+                let path = cog.attachment_path.as_ref().unwrap_or(
+                    &unsafe { COORDS_CONFIG.get() }
+                        .unwrap()
+                        .default_attachment_path,
+                );
+
+                let _ = msg.reply(ctx, format!("**[Coords category] {main}.unspecified**\nThe default subcategory for {main}.\n\nAttachment path: `{path}` (inherited)")).await;
                 return true;
             }
             _ => {}
@@ -121,11 +139,17 @@ impl Command for CmdCog {
                     return true;
                 }
 
+                let path = subcog.attachment_path.as_ref().unwrap_or(
+                    &unsafe { COORDS_CONFIG.get() }
+                        .unwrap()
+                        .default_attachment_path,
+                );
+
                 let _ = msg
                     .reply(
                         ctx,
                         format!(
-                            "**[Coords category] {}.{}**{}\n{}",
+                            "**[Coords category] {}.{}**{}\n{}\n\nAttachment path: `{path}`{}",
                             cog.display_name,
                             subcog.display_name,
                             if cog.name != cog.display_name || subcog.display_name != subcog.name {
@@ -138,6 +162,11 @@ impl Command for CmdCog {
                             } else {
                                 subcog.description.as_str()
                             },
+                            if subcog.attachment_path.is_none() {
+                                " (inherited)"
+                            } else {
+                                ""
+                            }
                         ),
                     )
                     .await;
@@ -166,11 +195,17 @@ impl Command for CmdCog {
             return true;
         }
 
+        let path = cog.attachment_path.as_ref().unwrap_or(
+            &unsafe { COORDS_CONFIG.get() }
+                .unwrap()
+                .default_attachment_path,
+        );
+
         let _ = msg
             .reply(
                 ctx,
                 format!(
-                    "**[Coords category] {}**{}\n{}\n\n**Subcategories**:\n\\- unspecified{}",
+                    "**[Coords category] {}**{}\n{}\n\n**Subcategories**:\n\\- unspecified{}\n\nPath: `{path}`{}",
                     cog.display_name,
                     if cog.name == cog.display_name {
                         String::new()
@@ -199,6 +234,11 @@ impl Command for CmdCog {
                             .unwrap();
                             current
                         })
+                    },
+                    if cog.attachment_path.is_none() {
+                        " (inherited)"
+                    } else {
+                        ""
                     }
                 ),
             )

@@ -10,6 +10,7 @@ Each category contains the following fields.
 |---|---|
 |`name`|A unique identifier.|
 |`desc`|An optional description text.|
+|`path`|Absolute path in the host system where attached files for entries in this category.|
 
 ### Renaming category
 ```sh

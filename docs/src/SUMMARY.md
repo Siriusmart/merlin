@@ -32,6 +32,7 @@
         - [find](./features/coords/find.md)
         - [coordedit](./features/coords/coordedit.md)
         - [coordrm](./features/coords/coordrm.md)
+        - [attach](./features/coords/attach.md)
 
 # Development
 
