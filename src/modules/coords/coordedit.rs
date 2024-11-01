@@ -227,14 +227,23 @@ impl Command for CmdCoordEdit {
                 return true;
             }
 
-            if entries.len() > 1 || Coord::find_by_name(&name).await.is_some() {
+            if entries.len() > 1 {
                 let _ = msg
-                    .reply(
-                        ctx,
-                        "Update failed because a coord entry with that name already exists.",
-                    )
+                    .reply(ctx, "Update failed because cannot batch rename entries.")
                     .await;
                 return true;
+            }
+
+            if let Some(found) = Coord::find_by_name(&name).await {
+                if Some(found.id) != entries.first().map(|entry| entry.0.id) {
+                    let _ = msg
+                        .reply(
+                            ctx,
+                            "Update failed because a coord entry with that name already exists.",
+                        )
+                        .await;
+                    return true;
+                }
             }
 
             Some(name)
