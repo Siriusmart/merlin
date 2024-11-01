@@ -208,7 +208,7 @@ impl Command for CmdCoordEdit {
         }
 
         let newname = if let Some(display) = newdisplay {
-            let name = display.replace(" ", "-");
+            let name = display.replace(" ", "-").to_lowercase();
 
             if name.parse::<i64>().is_ok() {
                 let _ = msg

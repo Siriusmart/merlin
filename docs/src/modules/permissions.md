@@ -50,7 +50,7 @@ Here's a list of all conditions
 |`%server_name`|The command is ran in a server with the specified name.|
 |`%server_id`|The command is ran in a server with the specified ID.|
 
-> Adding a role permissions in a server will automatically prepend it the rule with the server ID.
+> Adding a role permissions in a server will automatically prepend the rule with the server ID.
 
 ## Changing permissions
 
