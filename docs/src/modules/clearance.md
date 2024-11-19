@@ -58,4 +58,4 @@ $ .clearance admin +&bot_masters +@siriusmart +#admin_chat
 Clearance preset admin updated.
 ```
 
-> To prevent circular definitions, presets should not contain other presets. Although not recommended, you may still define presets in terms of other presets by modifying `clearance.jsonc`.
+> Note that circular definitions of presets are not allowed.

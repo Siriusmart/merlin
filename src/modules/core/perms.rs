@@ -190,7 +190,7 @@ impl Command for CmdPerms {
                     return true;
                 }
 
-                if !Clearance::validate(&args[1..], true) {
+                if !Clearance::validate(&args[1..]) {
                     let _ = msg
                         .reply(
                             ctx,

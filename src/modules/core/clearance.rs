@@ -101,7 +101,7 @@ impl Command for CmdClearance {
             }
             [preset, ..] => {
                 if args.iter().skip(1).any(|line| line.starts_with('?'))
-                    || !Clearance::validate(&args[1..], false)
+                    || !Clearance::validate(&args[1..])
                 {
                     let _ = msg
                         .reply(

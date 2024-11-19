@@ -1,4 +1,8 @@
-use std::{collections::HashMap, hash::Hash, sync::OnceLock};
+use std::{
+    collections::{HashMap, HashSet},
+    hash::Hash,
+    sync::OnceLock,
+};
 
 use async_recursion::async_recursion;
 use serde::{Deserialize, Serialize};
@@ -34,6 +38,26 @@ impl Config for Clearance {
 }
 
 impl Clearance {
+    pub fn no_cycles(&self, name: &str, set: &mut HashSet<String>) -> bool {
+        if !set.insert(name.to_string()) {
+            return false;
+        }
+
+        let rules = if let Some(rules) = self.0.get(name) {
+            rules
+        } else {
+            return true;
+        };
+
+        for entry in rules.iter() {
+            if entry.starts_with('?') && !self.no_cycles(&entry[1..], set) {
+                return false;
+            }
+        }
+
+        true
+    }
+
     pub fn remove(entry: &str) -> bool {
         unsafe { CLEARANCES.get_mut() }
             .unwrap()
@@ -86,7 +110,7 @@ impl Clearance {
             return false;
         }
 
-        if !Self::validate(list, true) {
+        if !Self::validate(list) {
             return false;
         }
 
@@ -98,10 +122,13 @@ impl Clearance {
         true
     }
 
-    pub fn validate(allowed_list: &[&str], presets: bool) -> bool {
+    pub fn validate(allowed_list: &[&str]) -> bool {
         for entry in allowed_list {
             if entry.starts_with('?') {
-                if !presets {
+                if !unsafe { CLEARANCES.get() }
+                    .unwrap()
+                    .no_cycles(&entry[1..], &mut HashSet::new())
+                {
                     return false;
                 }
                 continue;
