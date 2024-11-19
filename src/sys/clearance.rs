@@ -12,7 +12,7 @@ use super::Config;
 
 static mut CLEARANCES: OnceLock<Clearance> = OnceLock::new();
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Clearance(pub HashMap<String, Vec<String>>);
 
 impl Hash for Clearance {
@@ -106,11 +106,7 @@ impl Clearance {
     }
 
     pub fn set(entry: String, list: &[&str]) -> bool {
-        if list.iter().any(|line| line.starts_with('?')) {
-            return false;
-        }
-
-        if !Self::validate(list) {
+        if !Self::validate(list, Some(&entry)) {
             return false;
         }
 
@@ -122,15 +118,12 @@ impl Clearance {
         true
     }
 
-    pub fn validate(allowed_list: &[&str]) -> bool {
+    pub fn validate(allowed_list: &[&str], preset: Option<&str>) -> bool {
+        let mut used_presets = Vec::new();
+
         for entry in allowed_list {
-            if entry.starts_with('?') {
-                if !unsafe { CLEARANCES.get() }
-                    .unwrap()
-                    .no_cycles(&entry[1..], &mut HashSet::new())
-                {
-                    return false;
-                }
+            if let Some(preset) = entry.strip_prefix('?') {
+                used_presets.push(preset);
                 continue;
             }
 
@@ -142,6 +135,22 @@ impl Clearance {
                 '@' | '%' | '#' | '&' if entry.len() > 2 => {}
                 _ if matches!(&entry[1..], "everyone" | "everywhere" | "dm" | "server") => {}
                 _ => return false,
+            }
+        }
+
+        if preset.is_none() {
+            return true;
+        }
+
+        let mut new_clearance = unsafe { CLEARANCES.get() }.unwrap().clone();
+        new_clearance.0.insert(
+            preset.unwrap().to_string(),
+            allowed_list.iter().map(|s| s.to_string()).collect(),
+        );
+
+        for preset in used_presets.iter() {
+            if !new_clearance.no_cycles(preset, &mut HashSet::new()) {
+                return false;
             }
         }
 

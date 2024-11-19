@@ -101,7 +101,7 @@ impl Command for CmdCogPerms {
 
                     let _ = msg.reply(ctx, "Category permissions cleared.").await;
                 } else {
-                    if !Clearance::validate(&args[1..]) {
+                    if !Clearance::validate(&args[1..], None) {
                         let _ = msg
                             .reply(
                                 ctx,
@@ -158,7 +158,7 @@ impl Command for CmdCogPerms {
 
             let _ = msg.reply(ctx, "Category permissions cleared.").await;
         } else {
-            if !Clearance::validate(&args[1..]) {
+            if !Clearance::validate(&args[1..], None) {
                 let _ = msg
                     .reply(
                         ctx,

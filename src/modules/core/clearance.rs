@@ -100,8 +100,16 @@ impl Command for CmdClearance {
                 }
             }
             [preset, ..] => {
-                if !Clearance::validate(&args[1..])
-                {
+                let mut args = args
+                    .iter()
+                    .skip(1)
+                    .map(|s| s.to_string())
+                    .collect::<Vec<_>>();
+                Clearance::map_rules(&mut args, msg, ctx).await;
+                if !Clearance::set(
+                    preset.to_string(),
+                    &args.iter().map(String::as_str).collect::<Vec<_>>(),
+                ) {
                     let _ = msg
                         .reply(
                             ctx,
@@ -109,17 +117,6 @@ impl Command for CmdClearance {
                         )
                         .await;
                 } else {
-                    let mut args = args
-                        .iter()
-                        .skip(1)
-                        .map(|s| s.to_string())
-                        .collect::<Vec<_>>();
-                    Clearance::map_rules(&mut args, msg, ctx).await;
-                    Clearance::set(
-                        preset.to_string(),
-                        &args.iter().map(String::as_str).collect::<Vec<_>>(),
-                    );
-
                     let _ = msg
                         .reply(
                             ctx,
