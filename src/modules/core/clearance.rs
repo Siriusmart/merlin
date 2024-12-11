@@ -105,7 +105,10 @@ impl Command for CmdClearance {
                     .skip(1)
                     .map(|s| s.to_string())
                     .collect::<Vec<_>>();
-                Clearance::map_rules(&mut args, msg, ctx).await;
+                if !Clearance::map_rules(&mut args, msg, ctx).await {
+                    return true;
+                }
+
                 if !Clearance::set(
                     preset.to_string(),
                     &args.iter().map(String::as_str).collect::<Vec<_>>(),

@@ -112,7 +112,9 @@ impl Command for CmdCogPerms {
                     }
 
                     subcog.allowed = args[1..].iter().map(|s| s.to_string()).collect();
-                    Clearance::map_rules(&mut subcog.allowed, msg, ctx).await;
+                    if !Clearance::map_rules(&mut subcog.allowed, msg, ctx).await {
+                        return true;
+                    }
 
                     cog.save_replace(unsafe { CATEGORIES.get() }.unwrap())
                         .await
@@ -170,7 +172,9 @@ impl Command for CmdCogPerms {
             }
 
             cog.allowed = args[1..].iter().map(|s| s.to_string()).collect();
-            Clearance::map_rules(&mut cog.allowed, msg, ctx).await;
+            if !Clearance::map_rules(&mut cog.allowed, msg, ctx).await {
+                return true;
+            }
 
             cog.save_replace(unsafe { CATEGORIES.get() }.unwrap())
                 .await
